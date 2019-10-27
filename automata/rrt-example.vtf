@@ -1,0 +1,33 @@
+# Example of a restricted register transducer in the VATA format [TENTATIVE PROPOSAL, NOT FIXED!!!]
+@RRT
+%Name rtt1
+%Input-Track-Vars in1 in2
+%Output-Track-Vars out1 out2
+%History-Regs x1 x2
+%Stack-Regs y1a y1b y2a y2b
+%Initial init
+%Final q3
+
+# the transducer represents Nielsen's tranformation X -> aX for a variable 'X'
+# and symbol 'a', read from the two tapes
+init ("(var in1)" "(char in2)") \
+     ("out1 <- in2" "out2 <- in2") \
+     ("x1 <- in1" "x2 <- in2" "y1a <- in1") \
+     y1a_act
+
+init ("(char in1)" "(var in2)") \
+     ("out1 <- in1" "out2 <- in1") \
+     ("x1 <- in2" "x2 <- in1" "y2a <- in2") \
+     y2a_act
+
+y1a_act ("(= in1 x1)") \
+        ("out1 <- y1a" "out2 <- in2") \
+        ("y1a <- x2" "y1b <- x1") \
+        y1a_y2a_act
+
+y1a_y2a_act ("(not (isblank in1)") \
+            ("out1 <- y1a" "out2 <- in2") \
+            ("y1a <- y1b" "y1b <- in1") \
+            y1a_y2a_act
+
+# missing more transitions
