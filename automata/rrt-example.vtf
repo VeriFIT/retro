@@ -25,7 +25,7 @@ y1a_act ("(= in1 x1)") \
         ("y1a <- x2" "y1b <- x1") \
         y1a_y2a_act
 
-y1a_y2a_act ("(not (isblank in1)") \
+y1a_y2a_act ("(not (isblank in1))") \
             ("out1 <- y1a" "out2 <- in2") \
             ("y1a <- y1b" "y1b <- in1") \
             y1a_y2a_act

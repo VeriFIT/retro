@@ -4,7 +4,8 @@
 
 import sys
 
-from RRTParser import parse_rrt
+import RRTransducer
+from RRTParser import parse_rrt, autdict2RRTransducer
 
 ###########################################
 if __name__ == '__main__':
@@ -19,6 +20,9 @@ if __name__ == '__main__':
 
     aut = parse_rrt(fd)
     print(aut)
+
+    rrt = autdict2RRTransducer(aut)
+    print(rrt)
 
     if argc == 2:
         fd.close()
