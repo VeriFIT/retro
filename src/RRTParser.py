@@ -122,19 +122,19 @@ def parse_guard(line):
     if line[0] == "(" and line[-1] == ")":
         line = line[1:-1]
         if line.startswith("="):
-            vars = parse_vars(line)
+            vars = parse_vars(line[2:])
             return RRTGuardAct(line, vars, lambda x, y: x == y)
         if line.startswith("var"):
-            vars = parse_vars(line)
+            vars = parse_vars(line[4:])
             return RRTGuardAct(line, vars, lambda x: x.isupper())
         if line.startswith("char"):
-            vars = parse_vars(line)
+            vars = parse_vars(line[5:])
             return RRTGuardAct(line, vars, lambda x: x.islower())
         if line.startswith("isempty"):
-            vars = parse_vars(line)
+            vars = parse_vars(line[8:])
             return RRTGuardAct(line, vars, lambda x: x == "")
         if line.startswith("isblank"):
-            vars = parse_vars(line)
+            vars = parse_vars(line[8:])
             return RRTGuardAct(line, vars, lambda x: x == "?")
         if line.startswith("not"):
             rt = parse_guard(line[4:])
@@ -154,7 +154,7 @@ def autdict2RRTransducer(aut_dict):
     for key, lst in aut_dict["Transitions"].items():
         assert key not in trans
         #grds = map(parse_guard, value[1])
-        trans[key] = map(lst2RRTTran, lst)
+        trans[key] = list(map(lst2RRTTran, lst))
     return RRTransducer(aut_dict["Name"], aut_dict["Input-Track-Vars"], \
         aut_dict["Output-Track-Vars"], aut_dict["History-Regs"], \
         aut_dict["Stack-Regs"], aut_dict["Initial"], aut_dict["Final"], trans)
