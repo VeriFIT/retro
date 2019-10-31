@@ -38,9 +38,9 @@ class RRTransducer:
         self._trans = trans
 
     def __str__(self):
-        ret = str()
-        ret = ret + "Name: {0}\nInput-Track-Vars: {1}\nOutput-Track-Vars: {2}\n"\
-            "History-Regs: {3}\nStack-Regs: {4}\nInitial: {5}\nFinal: {6}\n\n".\
+        ret = "@RRT\n"
+        ret = ret + "%Name {0}\n%Input-Track-Vars {1}\n%Output-Track-Vars {2}\n"\
+            "%History-Regs {3}\n%Stack-Regs {4}\n%Initial {5}\n%Final {6}\n\n".\
             format(' '.join(map(str, self._name)), ' '.join(map(str, self._in_vars)), \
             ' '.join(map(str, self._out_vars)), ' '.join(map(str, self._hist_regs)), \
             ' '.join(map(str, self._stack_regs)), ' '.join(map(str, self._init)), \
@@ -256,7 +256,6 @@ class RRTransducer:
                 if sat is None or len(rm_grds) > 0:
                     raise Exception("Guard with free variables")
                 if sat == False:
-                    print(s, regs)
                     continue
 
                 varsym.update(dict(RRTransducer._register_symbol(tr.reg_update, varsym)))
@@ -270,3 +269,27 @@ class RRTransducer:
 
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
             self._hist_regs, self._stack_regs, inits, finals, trans)
+
+
+    ############################################################################
+    def get_nfa(self):
+        """
+        Convert flattened RRT to NFA. Assumes numbered states (starting with 0).
+        """
+
+        ret = NFA()
+        states = set(self._init)
+        fins = set(self._fin)
+        states = states | fins
+        for src, tr_list in self._trans.items():
+            for tr in tr_list:
+                states.add(tr.src)
+                states.add(tr.dest)
+                ret.addTransition(tr.src, tr.label, tr.dest)
+        for st in states:
+            ret.addState(st)
+        for fin in fins:
+            ret.addFinal(fin)
+        for ini in self._init:
+            ret.addInitial(ini)
+        return ret
