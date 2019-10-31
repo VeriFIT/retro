@@ -57,6 +57,7 @@ class RRTransducer:
         return ret
 
 
+    ############################################################################
     @staticmethod
     def _guard_subs(guard, sub):
         assert len(guard.vars) <= 2
@@ -74,6 +75,7 @@ class RRTransducer:
         return RRTGuardAct(name, vars, pred)
 
 
+    ############################################################################
     def _guard_sat(self, varsym, guards):
         rem_grds = []
         dec = True
@@ -91,6 +93,7 @@ class RRTransducer:
         return dec, rem_grds
 
 
+    ############################################################################
     @staticmethod
     def _cart_list_prod(l1, l2):
         ret = list()
@@ -100,6 +103,7 @@ class RRTransducer:
         return ret
 
 
+    ############################################################################
     @staticmethod
     def _guard_symbol(varsym):
         grds = list()
@@ -108,6 +112,7 @@ class RRTransducer:
         return grds
 
 
+    ############################################################################
     @staticmethod
     def _register_symbol(update, varsym):
         ret = list()
@@ -119,6 +124,7 @@ class RRTransducer:
         return ret
 
 
+    ############################################################################
     def product(self, nfa):
         """
         Product (composition) of NFA in FAdo and RRT. Instantiate all input
@@ -126,14 +132,16 @@ class RRTransducer:
         corresponding transition of NFA.
         """
         inits = RRTransducer._cart_list_prod(self._init, list(nfa.Initial))
-        finals = list()
+        finals = set()
         trans = dict()
+        com_states = set(copy(inits))
 
         state_stack = list()
         state_stack = copy(inits)
 
         while state_stack:
             s1, s2 = state_stack.pop()
+
             if (s1 not in self._trans) or (s2 not in nfa.delta):
                 continue
             for tr1 in self._trans[s1]:
@@ -150,14 +158,19 @@ class RRTransducer:
                             rm_grds, RRTransducer._register_symbol(tr1.tape_update, varsym),\
                             RRTransducer._register_symbol(tr1.reg_update, varsym), \
                             (tr1.dest, dst2), sym))
-                        state_stack.append((tr1.dest, dst2))
-                        if (dst2 in nfa.Final) and (tr1.dest in self._fin):
-                            finals.append((self._fin, dst2))
+
+                        dst_state = (tr1.dest, dst2)
+                        if dst_state not in com_states:
+                            com_states.add(dst_state)
+                            state_stack.append(dst_state)
+                            if (dst2 in nfa.Final) and (tr1.dest in self._fin):
+                                finals.add(dst_state)
 
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
-            self._hist_regs, self._stack_regs, inits, finals, trans)
+            self._hist_regs, self._stack_regs, inits, list(finals), trans)
 
 
+    ############################################################################
     @staticmethod
     def _state_dict(state_dict, cnt, states):
         for st in states:
@@ -167,7 +180,7 @@ class RRTransducer:
         return state_dict, cnt
 
 
-
+    ############################################################################
     def rename_states(self):
         """
         Remove states (each state is a number -> begins with 0).
@@ -205,6 +218,7 @@ class RRTransducer:
         self._fin = list(map(lambda x: state_dict[x], self._fin))
 
 
+    ############################################################################
     def _regs_null(self):
         rt = list()
         for rg in self._hist_regs:
@@ -214,6 +228,7 @@ class RRTransducer:
         return frozenset(rt)
 
 
+    ############################################################################
     def flatten(self):
         """
         Remove registers and guards from composited RRT.
