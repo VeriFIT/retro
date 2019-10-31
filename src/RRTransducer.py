@@ -22,6 +22,7 @@ class RRTTransition:
     tape_update: List[Tuple[str, str]]
     reg_update: List[Tuple[str, str]]
     dest: str
+    label: Tuple[str, str] = None
 
 
 class RRTransducer:
@@ -50,6 +51,8 @@ class RRTransducer:
                 ret = ret + str(tran.src) + " ({0})\n".format("), (".join(grn))
                 ret = ret + "\t({0})\n".format(", ".join(map((lambda x: "{0} <- {1}".format(x[0], x[1])), tran.tape_update)))
                 ret = ret + "\t({0})\n".format(", ".join(map(lambda x: "{0} <- {1}".format(x[0], x[1]), tran.reg_update)))
+                if tran.label:
+                    ret = ret + "\t{0}\n".format(str(tran.label))
                 ret = ret + "\t{0}\n\n".format(tran.dest)
         return ret
 
@@ -72,20 +75,20 @@ class RRTransducer:
 
 
     def _guard_sat(self, varsym, guards):
-        assert len(varsym) == len(self._in_vars)
-
         rem_grds = []
+        dec = True
         var_set = set(self._in_vars)
         for gr in guards:
             params_pairs = dict(filter(lambda x: x[0] in gr.vars, varsym.items()))
-            if not set(gr.vars) <= var_set:
+            if not set(gr.vars) <= set(varsym.keys()):
                 rem_grds.append(RRTransducer._guard_subs(gr, params_pairs))
+                dec = None
                 continue #too hard to decide now
 
             params = list(params_pairs.values())
             if not gr.pred(*params):
-                return False, None
-        return True, rem_grds
+                return False, []
+        return dec, rem_grds
 
 
     @staticmethod
@@ -97,14 +100,16 @@ class RRTransducer:
         return ret
 
 
-    def _guard_symbol(self, varsym):
+    @staticmethod
+    def _guard_symbol(varsym):
         grds = list()
         for var, val in varsym.items():
             grds.append(RRTGuardAct("= {0} {1}".format(var, val), [var], lambda x: x == val))
         return grds
 
 
-    def _register_symbol(self, update, varsym):
+    @staticmethod
+    def _register_symbol(update, varsym):
         ret = list()
         for reg, up in update:
             if up in varsym:
@@ -115,6 +120,11 @@ class RRTransducer:
 
 
     def product(self, nfa):
+        """
+        Product (composition) of NFA in FAdo and RRT. Instantiate all input
+        variables (with a possible guard-sat check) with values from the
+        corresponding transition of NFA.
+        """
         inits = RRTransducer._cart_list_prod(self._init, list(nfa.Initial))
         finals = list()
         trans = dict()
@@ -130,20 +140,118 @@ class RRTransducer:
                 for sym, dst2_set in nfa.delta[s2].items():
                     varsym = dict(zip(self._in_vars, list(sym)))
                     sat, rm_grds = self._guard_sat(varsym, tr1.guard)
-                    if not sat:
+                    if sat == False:
                         continue
-                    rm_grds += self._guard_symbol(varsym)
 
                     if (s1,s2) not in trans:
                         trans[(s1, s2)] = list()
                     for dst2 in list(dst2_set):
                         trans[(s1, s2)].append(RRTTransition((s1, s2), \
-                            rm_grds, self._register_symbol(tr1.tape_update, varsym),\
-                            self._register_symbol(tr1.reg_update, varsym), \
-                            (tr1.dest, dst2)))
+                            rm_grds, RRTransducer._register_symbol(tr1.tape_update, varsym),\
+                            RRTransducer._register_symbol(tr1.reg_update, varsym), \
+                            (tr1.dest, dst2), sym))
                         state_stack.append((tr1.dest, dst2))
                         if (dst2 in nfa.Final) and (tr1.dest in self._fin):
                             finals.append((self._fin, dst2))
+
+        return RRTransducer(self._name, self._in_vars, self._out_vars, \
+            self._hist_regs, self._stack_regs, inits, finals, trans)
+
+
+    @staticmethod
+    def _state_dict(state_dict, cnt, states):
+        for st in states:
+            if st not in state_dict:
+                state_dict[st] = cnt
+                cnt += 1
+        return state_dict, cnt
+
+
+
+    def rename_states(self):
+        """
+        Remove states (each state is a number -> begins with 0).
+        """
+        cnt = 0
+        state_dict = dict()
+        state_dict, cnt = RRTransducer._state_dict(state_dict, cnt, self._init)
+        state_dict, cnt = RRTransducer._state_dict(state_dict, cnt, self._fin)
+        trans = list()
+
+        for src, tr_list in self._trans.items():
+            tran_copy_list = list()
+            for tr in tr_list:
+                try:
+                    src_ren = state_dict[src]
+                except KeyError:
+                    state_dict[src] = cnt
+                    src_ren = cnt
+                    cnt += 1
+                try:
+                    dest_ren = state_dict[tr.dest]
+                except KeyError:
+                    state_dict[tr.dest] = cnt
+                    dest_ren = cnt
+                    cnt += 1
+
+                tran_copy = copy(tr)
+                tran_copy.src = src_ren
+                tran_copy.dest = dest_ren
+                tran_copy_list.append(tran_copy)
+            trans.append((src_ren, tran_copy_list))
+
+        self._trans = dict(trans)
+        self._init = list(map(lambda x: state_dict[x], self._init))
+        self._fin = list(map(lambda x: state_dict[x], self._fin))
+
+
+    def _regs_null(self):
+        rt = list()
+        for rg in self._hist_regs:
+            rt.append((rg, None))
+        for rg in self._stack_regs:
+            rt.append((rg, None))
+        return frozenset(rt)
+
+
+    def flatten(self):
+        """
+        Remove registers and guards from composited RRT.
+        """
+        states = set()
+        state_stack = list()
+        trans = dict()
+
+        for ini in self._init:
+            states.add((ini, self._regs_null()))
+
+        state_stack = list(copy(states))
+        inits = copy(state_stack)
+        finals = list()
+
+        while state_stack:
+            s, regs = state_stack.pop()
+            if s in self._fin:
+                finals.append(s)
+            if s not in self._trans:
+                continue
+            for tr in self._trans[s]:
+                varsym = dict(regs)
+                sat, rm_grds = self._guard_sat(varsym, tr.guard)
+                if sat is None or len(rm_grds) > 0:
+                    raise Exception("Guard with free variables")
+                if sat == False:
+                    print(s, regs)
+                    continue
+
+                varsym.update(dict(RRTransducer._register_symbol(tr.reg_update, varsym)))
+                dest = (tr.dest, frozenset(varsym.items()))
+                if (s, regs) not in trans:
+                    trans[(s, regs)] = list()
+                trans[(s, regs)].append(RRTTransition((s, regs), [], RRTransducer._register_symbol(tr.tape_update, varsym), [], dest, tr.label))
+                if dest not in states:
+                    state_stack.append(dest)
+                    states.add(dest)
 
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
             self._hist_regs, self._stack_regs, inits, finals, trans)
