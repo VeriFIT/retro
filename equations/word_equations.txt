@@ -36,7 +36,6 @@ V11 "\x09" V12 = V8 V4 "\v" V5
 from:
 V3 " " V4 = V8 V9 V10
 V3 " " V4 = V11 "\x09" V12 V7
-
 [Check SAT]
 from:
 V7 "\r" V8 = V16 V17 V18
@@ -1446,7 +1445,6 @@ V3 V4 = V19 "/" V20
 V16 V17 = V11 "@" V12
 V16 V17 = V8 "+" V9 V21
 V1 V3 V4 = "mongodb://" V15
-
 [Check SAT]
 from:
 V4 "\f" V5 = V13 V14 V15
@@ -1539,7 +1537,6 @@ V15 "\f" V16 = V14 V11 V12
 from:
 V3 "\x09" V4 = V8 V9 V10
 V3 "\x09" V4 = V11 " " V12 V7
-
 [Check SAT]
 from:
 V28 V29 V30 = V20 V21 V22
@@ -1859,7 +1856,6 @@ V3 V4 = V9 "A" V10
 V3 V4 = V13 "A" V14
 V8 V4 = "hdl"
 V3 V4 V11 = V15 ":" V16
-
 [Check SAT]
 from:
 V4 "\v" V5 = V13 V14 V15
@@ -2110,8 +2106,6 @@ V6 V7 = V8 ":" V9 V23 V18
 V8 ":" V9 = V19 ":" V20
 V10 "@" V11 = V8 ":" V9 V23
 V1 V6 V7 = "mongodb://" V15
-
-
 [Check SAT]
 from:
 V7 " " V8 = V16 V17 V18
@@ -2139,7 +2133,6 @@ V3 V4 = V19 "/" V20
 V16 V17 = V11 "@" V12
 V16 V17 = V8 "%" V9 V21
 V1 V3 V4 = "mongodb://" V15
-
 [Check SAT]
 from:
 V4 "\n" V5 = V13 V14 V15
@@ -2295,7 +2288,6 @@ from:
 V4 " " V5 = V13 V14 V15
 V4 " " V5 = V16 " " V17 V10
 V11 "\x09" V12 = V8 V4 " " V5
-
 [Check SAT]
 from:
 V5 " " V6 = V21 "\f" V22 V13
@@ -2380,14 +2372,10 @@ V3 V4 = V9 "A" V10
 V3 V4 = V13 "A" V14
 V8 V4 = "ftp"
 V3 V4 V11 = V15 ":" V16
-
-
 [Check SAT]
 from:
 V3 " " V4 = V8 V9 V10
 V3 " " V4 = V11 " " V12 V7
-
-
 [Check SAT]
 from:
 V7 "\x09" V8 = V16 V17 V18
@@ -2460,8 +2448,6 @@ V16 "\f" V17 = V9 V14 "\x09" V15
 from:
 V3 " " V4 = V8 V9 V10
 V3 " " V4 = V11 " " V12 V7
-
-
 [Check SAT]
 from:
 V1 V2 = V25 "=" V26
@@ -2844,7 +2830,6 @@ V11 "\f" V12 = V8 V4 "\v" V5
 from:
 V3 " " V4 = V8 V9 V10
 V3 " " V4 = V11 "\x09" V12 V7
-
 [Check SAT]
 from:
 V7 "\v" V8 = V16 V17 V18
@@ -3270,8 +3255,6 @@ V11 "/" V12 = V18 V13 "/" V14
 V11 "/" V12 = V10 V4 ";" V5
 V8 ":" V9 = V1 V11 "/" V12
 V8 ":" V9 = "http" V7
-
-
 [Check SAT]
 from:
 V3 "\x09" V4 = V8 V9 V10
@@ -3401,7 +3384,6 @@ V22 V23 V24 = V18 V19 V20
 from:
 V3 "\x09" V4 = V8 V9 V10
 V3 "\x09" V4 = V11 " " V12 V7
-
 [Check SAT]
 from:
 V5 " " V6 = V21 "\n" V22 V13
@@ -3494,7 +3476,6 @@ V22 V23 V24 = V16 V17 V18
 from:
 V3 " " V4 = V8 V9 V10
 V3 " " V4 = V11 "\x09" V12 V7
-
 [Check SAT]
 from:
 V5 " " V6 = V21 "\r" V22 V13
@@ -3935,7 +3916,6 @@ V11 "\f" V12 = V8 V4 "\n" V5
 from:
 V3 "\x09" V4 = V8 V9 V10
 V3 "\x09" V4 = V11 " " V12 V7
-
 [Check SAT]
 from:
 V5 " " V6 = V21 "\f" V22 V13
@@ -4976,8 +4956,6 @@ V3 "\v" V4 = V11 " " V12 V7
 from:
 V3 " " V4 = V8 V9 V10
 V3 " " V4 = V11 " " V12 V7
-
-
 [Check SAT]
 from:
 V3 "\f" V4 = V8 V9 V10
@@ -5001,8 +4979,6 @@ V6 V7 = V8 ":" V9 V23 V18
 V8 ":" V9 = V19 ":" V20
 V10 "@" V11 = V8 ":" V9 V23
 V1 V6 V7 = "mongodb://" V15
-
-
 [Check SAT]
 from:
 V7 "\n" V8 = V16 V17 V18

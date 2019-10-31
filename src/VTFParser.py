@@ -61,7 +61,6 @@ Result of a VTF format parser.
         return result
 
 
-
 ###############################
 def tokenize(line):
     assert line
@@ -136,6 +135,7 @@ def tokenize(line):
         token_list.append(token)
 
     return token_list
+
 
 ###############################
 def getline(fd):
