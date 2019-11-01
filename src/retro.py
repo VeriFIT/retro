@@ -19,7 +19,10 @@ def _tmp_nfa():
     m.addState(1)
     m.addState(2)
     m.addState(3)
+    m.addFinal(1)
+    m.addFinal(2)
     m.addTransition(0, ("X","a"), 1)
+    m.addTransition(0, ("X","a"), 0)
     m.addTransition(0, ("c","c"), 3)
     m.addTransition(1, ("X","X"), 2)
     return m
@@ -43,6 +46,13 @@ def _automata_test():
     print("### Rename states ###")
     flatten.rename_states()
     print(flatten)
+
+    print("### FAdo NFA ###")
+    nfa = flatten.get_nfa()
+    print(nfa)
+
+    print("### Minimal DFA ###")
+    print(nfa.minimal())
 
 
 ###########################################

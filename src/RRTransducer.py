@@ -242,12 +242,12 @@ class RRTransducer:
 
         state_stack = list(copy(states))
         inits = copy(state_stack)
-        finals = list()
+        finals = set()
 
         while state_stack:
             s, regs = state_stack.pop()
             if s in self._fin:
-                finals.append(s)
+                finals.add((s, regs))
             if s not in self._trans:
                 continue
             for tr in self._trans[s]:
@@ -268,7 +268,19 @@ class RRTransducer:
                     states.add(dest)
 
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
-            self._hist_regs, self._stack_regs, inits, finals, trans)
+            self._hist_regs, self._stack_regs, inits, list(finals), trans)
+
+
+    ############################################################################
+    def _symbol_from_tape(self, tape_update):
+        """
+        Create tuple symbol from transition tape update (assumes that each
+        output variable is set).
+        """
+        lst = list()
+        for out in self._out_vars:
+            lst.append(tape_update[out])
+        return tuple(lst)
 
 
     ############################################################################
@@ -285,7 +297,7 @@ class RRTransducer:
             for tr in tr_list:
                 states.add(tr.src)
                 states.add(tr.dest)
-                ret.addTransition(tr.src, tr.label, tr.dest)
+                ret.addTransition(tr.src, self._symbol_from_tape(dict(tr.tape_update)), tr.dest)
         for st in states:
             ret.addState(st)
         for fin in fins:

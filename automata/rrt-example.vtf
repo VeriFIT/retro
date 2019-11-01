@@ -6,7 +6,7 @@
 %History-Regs x1 x2
 %Stack-Regs y1a y1b y2a y2b
 %Initial init
-%Final q3
+%Final y1a_y2a_act y2a_act
 
 # the transducer represents Nielsen's tranformation X -> aX for a variable 'X'
 # and symbol 'a', read from the two tapes

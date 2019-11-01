@@ -138,7 +138,7 @@ def parse_guard(line):
             return RRTGuardAct(line, vars, lambda x: x == "?")
         if line.startswith("not"):
             rt = parse_guard(line[4:])
-            return RRTGuardAct(line, rt.vars, lambda x: not rt.fnc(x))
+            return RRTGuardAct(line, rt.vars, lambda x: not rt.pred(x))
     else:
         raise Exception("Unexpected guard form. {0}".format(line))
 
