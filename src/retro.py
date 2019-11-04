@@ -68,15 +68,13 @@ if __name__ == '__main__':
 
     tr = parse_rrt(fd_aut)
     rrt = autdict2RRTransducer(tr)
-    print(rrt)
-
-    _automata_test()
 
     eq = parse_equations(fd_eq)
-    print(str(eq))
+    nfa_eq = nfa_from_string(eq)
 
-    nfa = nfa_from_string(eq)
-    print(nfa)
+    print("### RRT & NFA product ###")
+    prod = rrt.product(nfa_eq)
+    print(prod)
 
     fd_aut.close()
     fd_eq.close()

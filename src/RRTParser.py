@@ -126,16 +126,16 @@ def parse_guard(line):
             return RRTGuardAct(line, vars, lambda x, y: x == y)
         if line.startswith("var"):
             vars = parse_vars(line[4:])
-            return RRTGuardAct(line, vars, lambda x: x.isupper())
+            return RRTGuardAct(line, vars, lambda x: x.isvar)
         if line.startswith("char"):
             vars = parse_vars(line[5:])
-            return RRTGuardAct(line, vars, lambda x: x.islower())
+            return RRTGuardAct(line, vars, lambda x: not x.isvar)
         if line.startswith("isempty"):
             vars = parse_vars(line[8:])
             return RRTGuardAct(line, vars, lambda x: x == "")
         if line.startswith("isblank"):
             vars = parse_vars(line[8:])
-            return RRTGuardAct(line, vars, lambda x: x == "?")
+            return RRTGuardAct(line, vars, lambda x: x.is_blank())
         if line.startswith("not"):
             rt = parse_guard(line[4:])
             return RRTGuardAct(line, rt.vars, lambda x: not rt.pred(x))
