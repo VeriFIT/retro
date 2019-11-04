@@ -6,6 +6,7 @@ import sys
 
 import RRTransducer
 from RRTParser import parse_rrt, autdict2RRTransducer
+from EquationParser import parse_equations, nfa_from_string
 
 from FAdo.fa import *
 #from FAdo.reex import *
@@ -58,19 +59,24 @@ def _automata_test():
 ###########################################
 if __name__ == '__main__':
     argc = len(sys.argv)
-    if argc == 1:
-        fd = sys.stdin
-    elif argc == 2:
-        fd = open(sys.argv[1], "r")
+    if argc == 3:
+        fd_aut = open(sys.argv[1], "r")
+        fd_eq = open(sys.argv[2], "r")
     else:
-        print("Invalid number of arguments: either 0 or 1 required")
+        print("Invalid number of arguments: 2 are required")
         sys.exit(1)
 
-    tr = parse_rrt(fd)
+    tr = parse_rrt(fd_aut)
     rrt = autdict2RRTransducer(tr)
     print(rrt)
 
     _automata_test()
 
-    if argc == 2:
-        fd.close()
+    eq = parse_equations(fd_eq)
+    print(str(eq))
+
+    nfa = nfa_from_string(eq)
+    print(nfa)
+
+    fd_aut.close()
+    fd_eq.close()
