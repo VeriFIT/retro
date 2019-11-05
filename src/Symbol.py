@@ -15,6 +15,8 @@ class Symbol:
             return "_"
         elif self.is_delim():
             return "#"
+        elif self.is_eps():
+            return "eps"
         else:
             if chr(self.val).isalnum():
                 return chr(self.val)
@@ -34,9 +36,18 @@ class Symbol:
         return (not self.isvar) and (self.val == -2)
 
 
+    def is_eps(self):
+        return (not self.isvar) and (self.val == -3)
+
+
     @staticmethod
     def blank():
         return Symbol(False, -1)
+
+
+    @staticmethod
+    def epsilon():
+        return Symbol(False, -3)
 
 
     @staticmethod

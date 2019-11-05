@@ -22,14 +22,14 @@ def _tmp_nfa():
     m.addState(3)
     m.addFinal(1)
     m.addFinal(2)
-    m.addTransition(0, ("X","a"), 1)
+    m.addTransition(0, Epsilon, 1)
     m.addTransition(0, ("X","a"), 0)
     m.addTransition(0, ("c","c"), 3)
     m.addTransition(1, ("X","X"), 2)
     return m
 
 
-def _automata_test():
+def _aut_test(rrt):
     aut = _tmp_nfa()
 
     print("### RRT & NFA product ###")
@@ -66,15 +66,28 @@ if __name__ == '__main__':
         print("Invalid number of arguments: 2 are required")
         sys.exit(1)
 
+
     tr = parse_rrt(fd_aut)
     rrt = autdict2RRTransducer(tr)
 
+
+    print(_tmp_nfa())
+
     eq = parse_equations(fd_eq)
     nfa_eq = nfa_from_string(eq)
+    #print(nfa_eq)
 
     print("### RRT & NFA product ###")
     prod = rrt.product(nfa_eq)
-    print(prod)
+    #print(prod)
+
+    prod.rename_states()
+    flatten = prod.flatten()
+    #print(flatten)
+
+    flatten.rename_states()
+    #print(flatten)
+
 
     fd_aut.close()
     fd_eq.close()

@@ -1,0 +1,95 @@
+# Transducer performing X -> YX rule
+@RRT
+%Name X->YX
+%Input-Track-Vars in1 in2
+%Output-Track-Vars out1 out2
+%History-Regs x1 x2
+%Stack-Regs y1a y1b y2a y2b
+%Initial init
+%Final no_act fin
+
+
+init ("(var in1)" "(not (blank in2))") \
+     ("out1 <- in2" "out2 <- in2") \
+     ("x1 <- in1" "x2 <- in2" "y1a <- in1") \
+     y1a_act
+
+y1a_act ("(not (= in1 x1))" "(not (= in2 x1))" "(not (blank in1))") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- in1") \
+     y1a_act
+
+y1a_act ("(= in1 x1)") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- x2" "y1b <- in1") \
+     y1a_y1b_act
+
+y1a_y1b_act ("(not (blank in1))") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- y1b" "y1b <- in1") \
+     y1a_y1b_act
+
+y1a_y1b_act ("(blank in1)") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- y1b" "y1b <- null") \
+     y1a_act
+
+y1a_act ("(= in2 x1)") \
+     ("out1 <- y1a" "out2 <- x2") \
+     ("y1a <- in1" "y1b <- x1") \
+     y1a_y2a_act
+
+y1a_y2a_act ("(not (blank in1))" "(not (blank in2))") \
+     ("out1 <- y1a" "out2 <- y2a") \
+     ("y1a <- in1" "y1b <- in2") \
+     y1a_y2a_act
+
+y1a_y2a_act ("(blank in2)" "(not (blank in1))") \
+     ("out1 <- y1a" "out2 <- y2a") \
+     ("y1a <- in1" "y2a <- null") \
+     y1a_act
+
+y1a_y2a_act ("(blank in1)" "(not (blank in2))") \
+     ("out1 <- y1a" "out2 <- y2a") \
+     ("y1a <- null" "y2a <- in2") \
+     y2a_act
+
+y1a_y2a_act ("(blank in1)" "(blank in2)") \
+     ("out1 <- y1a" "out2 <- y2a") \
+     ("y1a <- null" "y2a <- null") \
+     fin
+
+y2a_act ("(not (blank in2))") \
+     ("out1 <- in1" "out2 <- y2a") \
+     ("y2a <- in2") \
+     y2a_act
+
+y2a_act ("(blank in2)") \
+     ("out1 <- in1" "out2 <- y2a") \
+     ("y2a <- null") \
+     fin
+
+y1a_act ("(blank in1)") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- null") \
+     no_act
+
+no_act ("(not (blank in2))" "(not (= in2 x1))") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     no_act
+
+no_act ("(= in2 x1)") \
+     ("out1 <- in1" "out2 <- x2") \
+     ("y2a <- in2") \
+     y2a_act
+
+no_act ("(blank in1)" "(blank in2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     fin
+
+fin ("(blank in1)" "(blank in2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     fin

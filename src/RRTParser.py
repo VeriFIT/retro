@@ -133,12 +133,17 @@ def parse_guard(line):
         if line.startswith("isempty"):
             vars = parse_vars(line[8:])
             return RRTGuardAct(line, vars, lambda x: x == "")
-        if line.startswith("isblank"):
-            vars = parse_vars(line[8:])
+        if line.startswith("blank"):
+            vars = parse_vars(line[6:])
             return RRTGuardAct(line, vars, lambda x: x.is_blank())
         if line.startswith("not"):
             rt = parse_guard(line[4:])
-            return RRTGuardAct(line, rt.vars, lambda x: not rt.pred(x))
+            if len(rt.vars) == 1:
+                return RRTGuardAct(line, rt.vars, lambda x: not rt.pred(x))
+            elif len(rt.vars) == 2:
+                return RRTGuardAct(line, rt.vars, lambda x, y: not rt.pred(x, y))
+            else:
+                raise Exception("Too many free variables")
     else:
         raise Exception("Unexpected guard form. {0}".format(line))
 

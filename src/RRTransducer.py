@@ -5,6 +5,8 @@ from typing import Callable, List, Tuple, Dict
 
 from FAdo.fa import *
 
+from Symbol import *
+
 @dataclass
 class RRTGuardAct:
     name: str
@@ -67,7 +69,7 @@ class RRTransducer:
         varsk = set(sub.keys())
         vars = [item for item in guard.vars if item not in varsk]
         for var, sb in sub.items():
-            name = name.replace(var, sb)
+            name = name.replace(var, str(sb))
             if guard.vars.index(var) == 0:
                 pred = lambda y: guard.pred(sb, y)
             else:
@@ -80,6 +82,7 @@ class RRTransducer:
         rem_grds = []
         dec = True
         var_set = set(self._in_vars)
+
         for gr in guards:
             params_pairs = dict(filter(lambda x: x[0] in gr.vars, varsym.items()))
             if not set(gr.vars) <= set(varsym.keys()):
@@ -117,6 +120,12 @@ class RRTransducer:
     def _register_symbol(update, varsym):
         ret = list()
         for reg, up in update:
+            if up == "null":
+                ret.append((reg, None))
+                continue
+            if up == "eps":
+                ret.append((reg, Symbol.epsilon()))
+                continue
             if up in varsym:
                 ret.append((reg, varsym[up]))
             else:
@@ -258,11 +267,12 @@ class RRTransducer:
                 if sat == False:
                     continue
 
+                tp_update = RRTransducer._register_symbol(tr.tape_update, varsym)
                 varsym.update(dict(RRTransducer._register_symbol(tr.reg_update, varsym)))
                 dest = (tr.dest, frozenset(varsym.items()))
                 if (s, regs) not in trans:
                     trans[(s, regs)] = list()
-                trans[(s, regs)].append(RRTTransition((s, regs), [], RRTransducer._register_symbol(tr.tape_update, varsym), [], dest, tr.label))
+                trans[(s, regs)].append(RRTTransition((s, regs), [], tp_update, [], dest, tr.label))
                 if dest not in states:
                     state_stack.append(dest)
                     states.add(dest)
@@ -278,8 +288,17 @@ class RRTransducer:
         output variable is set).
         """
         lst = list()
+        eps_cnt = 0
         for out in self._out_vars:
-            lst.append(tape_update[out])
+            sym = tape_update[out]
+            if sym.is_eps():
+                eps_cnt = eps_cnt + 1
+            lst.append(sym)
+
+        assert (eps_cnt == 0) or (eps_cnt == len(self._out_vars))
+
+        if eps_cnt == len(self._out_vars):
+            return Epsilon
         return tuple(lst)
 
 
