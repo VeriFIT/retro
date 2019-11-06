@@ -91,6 +91,7 @@ class RRTransducer:
                 continue #too hard to decide now
 
             params = list(params_pairs.values())
+            #print(params_pairs, guards, params)
             if not gr.pred(*params):
                 return False, []
         return dec, rem_grds

@@ -143,7 +143,7 @@ def parse_guard(line):
             elif len(rt.vars) == 2:
                 return RRTGuardAct(line, rt.vars, lambda x, y: not rt.pred(x, y))
             else:
-                raise Exception("Too many free variables")
+                raise Exception("Too many free variables {0}".format(rt.vars))
     else:
         raise Exception("Unexpected guard form. {0}".format(line))
 

@@ -167,12 +167,18 @@ def rrt2nfa(rrt):
     new_body = list()
     for trans in rrt.body:
         trans = parse_rrt_trans(trans)
-        guard = functools.reduce(lambda x, y: x + " & " + y, trans.guard)
+        if len(trans.guard) > 0:
+            guard = functools.reduce(lambda x, y: x + " & " + y, trans.guard)
+        else:
+            guard = str()
         item_to_asgn = lambda x: x[0] + " <- " + x[1]
         upd_list = list(map(item_to_asgn, trans.tape_update.items()))
         tape_upd = functools.reduce(lambda x, y: x + ", " + y, upd_list)
         upd_list = list(map(item_to_asgn, trans.reg_update.items()))
-        reg_upd = functools.reduce(lambda x, y: x + ", " + y, upd_list)
+        if len(upd_list) > 0:
+            reg_upd = functools.reduce(lambda x, y: x + ", " + y, upd_list)
+        else:
+            reg_upd = str()
         label = "{0}\\n{1}\\n{2}".format(guard, tape_upd, reg_upd)
         new_trans = (trans.src, label, trans.dst)
         new_body.append(new_trans)

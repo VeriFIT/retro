@@ -24,6 +24,30 @@ class Symbol:
                 return "\\x{0}".format(self.val)
 
 
+    def __eq__(self, other):
+        if isinstance(other, Symbol):
+            return (self.isvar == other.isvar) and (self.val == other.val)
+        return False
+
+    def __le__(self, other):
+        if (not self.isvar) and other.isvar:
+            return True
+        if self.isvar and (not other.isvar):
+            return False
+        return (self.val <= other.val)
+
+    def __lt__(self, other):
+        if (not self.isvar) and other.isvar:
+            return True
+        if self.isvar and (not other.isvar):
+            return False
+        return (self.val < other.val)
+
+
+    def __hash__(self):
+        return hash((self.val, self.isvar))
+
+
     def __repr__(self):
         return self.__str__()
 

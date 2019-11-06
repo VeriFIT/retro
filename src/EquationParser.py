@@ -109,6 +109,7 @@ def nfa_from_string(lst):
         ret.addTransition(i, item, i+1)
         i = i + 1
     ret.addState(i)
+    ret.addTransition(i, (Symbol.blank(), Symbol.blank()), i)
     ret.addFinal(i)
     ret.addInitial(0)
     return ret

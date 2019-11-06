@@ -14,16 +14,6 @@ init ("(var in1)" "(not (blank in2))") \
      ("x1 <- in1" "x2 <- in2" "y1a <- in1") \
      y1a_act
 
-init ("(blank in1)" "(blank in2)") \
-     ("out1 <- in1" "out2 <- in2") \
-     () \
-     no_act
-
-init ("(= in1 in2)" "(not (blank in1))") \
-     ("out1 <- eps" "out2 <- eps") \
-     () \
-     init
-
 y1a_act ("(not (= in1 x1))" "(not (= in2 x1))" "(not (blank in1))") \
      ("out1 <- y1a" "out2 <- in2") \
      ("y1a <- in1") \
@@ -67,9 +57,9 @@ y1a_y2a_act ("(blank in1)" "(not (blank in2))") \
 y1a_y2a_act ("(blank in1)" "(blank in2)") \
      ("out1 <- y1a" "out2 <- y2a") \
      ("y1a <- null" "y2a <- null") \
-     no_act
+     fin
 
-y2a_act ("(not (= x1 in1))" "(not (= x1 in2))" "(not (blank in2))") \
+y2a_act ("(not (blank in2))") \
      ("out1 <- in1" "out2 <- y2a") \
      ("y2a <- in2") \
      y2a_act
@@ -77,14 +67,14 @@ y2a_act ("(not (= x1 in1))" "(not (= x1 in2))" "(not (blank in2))") \
 y2a_act ("(blank in2)") \
      ("out1 <- in1" "out2 <- y2a") \
      ("y2a <- null") \
-     no_act
+     fin
 
 y1a_act ("(blank in1)") \
      ("out1 <- y1a" "out2 <- in2") \
      ("y1a <- null") \
      no_act
 
-no_act ("(not (= in2 x1))" "(not (= in1 x1))") \
+no_act ("(not (blank in2))" "(not (= in2 x1))") \
      ("out1 <- in1" "out2 <- in2") \
      () \
      no_act
@@ -94,42 +84,12 @@ no_act ("(= in2 x1)") \
      ("y2a <- in2") \
      y2a_act
 
-no_act ("(= in1 x1)") \
-     ("out1 <- x2" "out2 <- in2") \
-     ("y1a <- in1") \
-     y1a_act
+no_act ("(blank in1)" "(blank in2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     fin
 
-#no_act ("(blank in1)" "(blank in2)") \
-#     ("out1 <- in1" "out2 <- in2") \
-#     () \
-#     fin
-
-#fin ("(blank in1)" "(blank in2)") \
-#     ("out1 <- in1" "out2 <- in2") \
-#     () \
-#     fin
-
-init ("(var in2)" "(not (blank in1))") \
-     ("out1 <- eps" "out2 <- eps") \
-     ("x1 <- in2" "x2 <- in1" "y2a <- in2") \
-     y2a_act
-
-y2a_act ("(= in1 x1)") \
-     ("out1 <- x2" "out2 <- y2a") \
-     ("y1a <- in1" "y2a <- in2") \
-     y1a_y2a_act
-
-y2a_act ("(= in2 x1)") \
-     ("out1 <- in1" "out2 <- y2a") \
-     ("y2a <- x2" "y2b <- in2") \
-     y2a_y2b_act
-
-y2a_y2b_act ("(not (blank in2))") \
-     ("out1 <- in1" "out2 <- y2a") \
-     ("y2a <- y2b" "y2b <- in2") \
-     y2a_y2b_act
-
-y2a_y2b_act ("(blank in2)") \
-     ("out2 <- y2a" "out1 <- in1") \
-     ("y2a <- y2b" "y2b <- null") \
-     y2a_act
+fin ("(blank in1)" "(blank in2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     fin
