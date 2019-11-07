@@ -1,30 +1,43 @@
 #!/usr/bin/env python3
 
-from dataclasses import dataclass
+#from dataclasses import dataclass
 from typing import Callable, List, Tuple, Dict
 
 from FAdo.fa import *
 
 from Symbol import *
 
-@dataclass
+#@dataclass
 class RRTGuardAct:
-    name: str
-    vars: List[str]
-    pred: Callable
+    # name: str
+    # vars: List[str]
+    # pred: Callable
+
+    def __init__(self, nm, vr, pr):
+        self.name = nm
+        self.vars = vr
+        self.pred = pr
 
     def __str__(self):
         return self.name
 
 
-@dataclass
+#@dataclass
 class RRTTransition:
-    src: str
-    guard: List[RRTGuardAct]
-    tape_update: List[Tuple[str, str]]
-    reg_update: List[Tuple[str, str]]
-    dest: str
-    label: Tuple[str, str] = None
+    # src: str
+    # guard: List[RRTGuardAct]
+    # tape_update: List[Tuple[str, str]]
+    # reg_update: List[Tuple[str, str]]
+    # dest: str
+    # label: Tuple[str, str] = None
+
+    def __init__(self, sr, gr, tp, rg, ds, lb = None):
+        self.src = sr
+        self.guard = gr
+        self.tape_update = tp
+        self.reg_update = rg
+        self.dest = ds
+        self.label = lb
 
 
 class RRTransducer:

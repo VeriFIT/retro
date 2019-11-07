@@ -66,6 +66,36 @@ def solution_nfa():
     return ret
 
 
+def onthefly_empty(fa1, fa2):
+    inits = [(fa1.Initial, fa2.Initial)]
+    finals = set()
+    trans = dict()
+    com_states = set(copy(inits))
+
+    state_stack = list()
+    state_stack = copy(inits)
+
+    while state_stack:
+        s1, s2 = state_stack.pop()
+
+        if (s2 in fa2.Final) and (s1 in fa1.Final):
+            return False
+
+        if (s1 not in fa1.delta) or (s2 not in fa2.delta):
+            continue
+        for sym1, dst1 in fa1.delta[s1].items():
+            for sym2, dst2 in fa2.delta[s2].items():
+                if sym1 != sym2:
+                    continue
+
+                dst_state = (dst1, dst2)
+
+                if dst_state not in com_states:
+                    com_states.add(dst_state)
+                    state_stack.append(dst_state)
+    return True
+
+
 ###########################################
 if __name__ == '__main__':
     argc = len(sys.argv)
@@ -76,8 +106,9 @@ if __name__ == '__main__':
         print("Invalid number of arguments: at least 2 are required")
         sys.exit(1)
 
-    eq = parse_equations(fd_eq)
-    nfa_eq = nfa_from_string(eq)
+    nfa_eq = parse_equations(fd_eq)
+    nfa_eq = nfa_eq.minimal().toNFA()
+
     nfa_sol = solution_nfa()
     ret = None
 
@@ -86,32 +117,51 @@ if __name__ == '__main__':
     all_nfa = copy(nfa_eq)
 
     while True:
-        prods = [item.product(nfa_eq) for item in rrts]
-        flatten = [item.flatten() for item in prods]
+        prods = [item.product(nfa_eq.toNFA()) for item in rrts]
+        flatten = list()
+        for item in prods:
+            flatten.append(item.flatten())
 
         curr_nfa = NFA()
         for rrt in flatten:
             rrt.rename_states()
-            fado_aut = rrt.get_nfa()
+            fado_aut = rrt.get_nfa().trim()
+            fado_aut = fado_aut.minimal().toNFA()
+
+            # print("step")
+            # print(rrt._name)
+            # for f, to in fado_aut.delta.items():
+            #     for sym, _ in to.items():
+            #         if sym[0].is_delim():
+            #             if not sym[1].is_delim():
+            #                 print("Error {0}".format(sym))
+            #                 fado_aut.renameStates()
+            #                 print(fado_aut.dotFormat())
+            #                 print(nfa_eq.dotFormat())
+            #                 exit(1)
+            #         if sym[1].is_delim():
+            #             if not sym[0].is_delim():
+            #                 print("Error {0}".format(sym))
 
             curr_nfa = curr_nfa.union(fado_aut)
-            curr_nfa.elimEpsilon()
 
-        curr_nfa = curr_nfa.minimal().toNFA()
-
-        if (curr_nfa.conjunction(nfa_sol)).witness() != None:
+        curr_nfa = curr_nfa.toDFA()
+        if curr_nfa.Initial in curr_nfa.Final:
             ret = True
             break
 
+
+
         all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
-        test = all_nfa.conjunction(curr_nfa)
-        if test.equivalentP(curr_nfa):
+        comp = all_nfa.__invert__().toDFA()
+        comp.renameStates()
+        if onthefly_empty(comp, curr_nfa):
             ret = False
             break
 
         all_nfa = all_nfa.union(curr_nfa)
-        all_nfa.elimEpsilon()
         nfa_eq = copy(curr_nfa)
+        nfa_eq = nfa_eq.trim()
 
     if ret:
         print("Sat")

@@ -136,6 +136,9 @@ def parse_guard(line):
         if line.startswith("blank"):
             vars = parse_vars(line[6:])
             return RRTGuardAct(line, vars, lambda x: x.is_blank())
+        if line.startswith("delim"):
+            vars = parse_vars(line[6:])
+            return RRTGuardAct(line, vars, lambda x: x.is_delim())
         if line.startswith("not"):
             rt = parse_guard(line[4:])
             if len(rt.vars) == 1:

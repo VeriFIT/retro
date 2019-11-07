@@ -73,7 +73,7 @@ def parse_symbol(sym):
     if sym.startswith("\""):
         str = ast.literal_eval(sym)
         return list(map(lambda x: Symbol(False, ord(x)), str))
-    raise Exception("Unexpected string token")
+    raise Exception("Unexpected string token {0}".format(sym))
 
 
 ############################################################################
@@ -89,14 +89,19 @@ def pad_equation(left, right):
 ############################################################################
 def parse_equations(fd):
     ret = list()
-    while True:
-        line = fd.readline()
-        if not line:
-            break
-        ret = ret + parse_single_equation(line)
-        ret.append((Symbol.delimiter(), Symbol.delimiter()))
+    nfa = None
+    content = fd.readlines()
 
-    return ret[0:-1]
+    for i in range(0, len(content)):
+        ret =  parse_single_equation(content[i])
+        if i != 0:
+            ret.insert(0, (Symbol.delimiter(), Symbol.delimiter()))
+        if nfa is not None:
+            nfa = nfa.concat(nfa_from_string(ret))
+        else:
+            nfa = nfa_from_string(ret)
+
+    return nfa
 
 
 ############################################################################
