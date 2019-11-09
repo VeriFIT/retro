@@ -7,7 +7,7 @@ import time
 
 import RRTransducer
 from Symbol import *
-from NFAOperation import onthefly_empty
+from NFAOperation import *
 from RRTParser import parse_rrt, autdict2RRTransducer
 from EquationParser import parse_equations, nfa_from_string
 
@@ -80,7 +80,7 @@ def basic_cons_test(fado_aut):
                     print("Error {0}".format(sym))
 
 
-def rmc_loop(nfa_eq, nfa_sol, rrts):
+def rmc_loop_dfa(nfa_eq, nfa_sol, rrts):
     all_nfa = copy(nfa_eq)
 
     while True:
@@ -101,15 +101,49 @@ def rmc_loop(nfa_eq, nfa_sol, rrts):
         if curr_nfa.Initial in curr_nfa.Final:
             return True
 
-
-
         all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
         comp = all_nfa.__invert__().toDFA()
         comp.renameStates()
-        if onthefly_empty(comp, curr_nfa):
+        if onthefly_empty_DFA(comp, curr_nfa):
             return False
 
         all_nfa = all_nfa.union(curr_nfa)
+        nfa_eq = copy(curr_nfa)
+        nfa_eq = nfa_eq.trim()
+
+
+def rmc_loop_nfa(nfa_eq, nfa_sol, rrts):
+    all_nfa = copy(nfa_eq)
+
+    while True:
+        prods = [item.product(nfa_eq.toNFA()) for item in rrts]
+        flatten = list()
+        for item in prods:
+            flatten.append(item.flatten())
+
+        curr_nfa = NFA()
+        for rrt in flatten:
+            rrt.rename_states()
+            fado_aut = rrt.get_nfa().trim()
+            #fado_aut.eliminateEpsilonTransitions()
+            fado_aut = fado_aut.minimal().toNFA()
+            #fado_aut = fado_aut.lrEquivNFA()
+            fado_aut.renameStates()
+            curr_nfa = disjoint_union(curr_nfa, fado_aut)
+
+        if (curr_nfa.Initial & curr_nfa.Final) != set():
+            return True
+
+        #print("{0} {1}".format(len(curr_nfa.States), len(all_nfa.States)))
+        all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
+        comp = all_nfa.__invert__()
+        comp.renameStates()
+        if onthefly_empty_NFA(comp.toNFA(), curr_nfa):
+            return False
+
+        all_nfa.renameStates()
+        all_nfa = disjoint_union(all_nfa.toNFA(), curr_nfa)
+        all_nfa = all_nfa.toDFA()
         nfa_eq = copy(curr_nfa)
         nfa_eq = nfa_eq.trim()
 
@@ -135,7 +169,7 @@ if __name__ == '__main__':
     trs = list(map (parse_rrt, fd_aut))
     rrts = list(map (autdict2RRTransducer, trs))
 
-    ret = rmc_loop(nfa_eq, nfa_sol, rrts)
+    ret = rmc_loop_nfa(nfa_eq, nfa_sol, rrts)
     if ret:
         print("Sat")
     else:
