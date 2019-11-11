@@ -32,7 +32,6 @@ class LabelNFA:
     def toDFA(self):
         dfa = self.nfa.toDFA()
         lab = dict()
-        print(self.label)
         for st in dfa.States:
             if isinstance(st, set):
                 ns = frozenset(st)
@@ -120,7 +119,7 @@ class LabelNFA:
         dup = self.nfa.dup()
         rename_list = list()
 
-        if not isinstance(self.nfa.States, dict):
-            for st in self.nfa.States:
-                dup.renameState(st, "{0} {1}".format(st, self.label[st]))
+        for i in range(len(self.nfa.States)):
+            st = self.nfa.States[i]
+            dup.renameState(i, "{0} {1}".format(st, self.label[LabelNFA._set_convert(st)]))
         return dup.dotFormat()

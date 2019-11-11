@@ -192,6 +192,9 @@ class RRTransducer:
         state_stack = list()
         state_stack = copy(inits)
 
+        for st in inits:
+            label[st] = None
+
         while state_stack:
             s1, s2 = state_stack.pop()
 
@@ -218,22 +221,11 @@ class RRTransducer:
                             com_states.add(dst_state)
 
                             dct = dict(reg_upd)
-
-                            label[dst_state] = RRTransducer.compute_label(label, dct, (s1, s2))
-                            try:
-                                print(dst_state, label[dst_state], (s1, s2))
-                            except KeyError:
-                                print(dst_state, label[dst_state], None)
+                            label[dst_state] = RRTransducer.get_nielsen_rule(dct)
 
                             state_stack.append(dst_state)
                             if (dst2 in nfa.Final) and (tr1.dest in self._fin):
                                 finals.add(dst_state)
-
-
-        for st in inits:
-            label[st] = None
-
-        print(label)
 
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
             self._hist_regs, self._stack_regs, inits, list(finals), trans, label)
@@ -319,10 +311,13 @@ class RRTransducer:
         state_stack = list(copy(states))
         inits = copy(state_stack)
         finals = set()
+        
+        for st in inits:
+            label[st] = None
 
         while state_stack:
             s, regs = state_stack.pop()
-            label[(s, regs)] = self._label[s]
+            #label[(s, regs)] = self._label[s]
             if s in self._fin:
                 finals.add((s, regs))
             if s not in self._trans:
@@ -342,6 +337,10 @@ class RRTransducer:
                     trans[(s, regs)] = list()
                 trans[(s, regs)].append(RRTTransition((s, regs), [], tp_update, [], dest, tr.label))
                 if dest not in states:
+                    if self._label[tr.dest] is not None:
+                        label[dest] = self._label[tr.dest]
+                    else:
+                        label[dest] = label[(s, regs)]
                     state_stack.append(dest)
                     states.add(dest)
 
