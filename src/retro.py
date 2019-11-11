@@ -81,7 +81,9 @@ def basic_cons_test(fado_aut):
 
 
 def rmc_loop_dfa(nfa_eq, nfa_sol, rrts):
+    nfa_eq = nfa_eq.toDFA()
     all_nfa = copy(nfa_eq)
+    i = 0
 
     while True:
         prods = [item.product(nfa_eq.toNFA()) for item in rrts]
@@ -97,7 +99,7 @@ def rmc_loop_dfa(nfa_eq, nfa_sol, rrts):
 
             curr_nfa = curr_nfa.union(fado_aut)
 
-        curr_nfa = curr_nfa.toDFA()
+        curr_nfa = curr_nfa.minimal()
         if curr_nfa.Initial in curr_nfa.Final:
             return True
 
@@ -107,6 +109,8 @@ def rmc_loop_dfa(nfa_eq, nfa_sol, rrts):
         if onthefly_empty_DFA(comp, curr_nfa):
             return False
 
+        # nfa_eq = curr_nfa - all_nfa
+        # nfa_eq = nfa_eq.minimal()
         all_nfa = all_nfa.union(curr_nfa)
         nfa_eq = copy(curr_nfa)
         nfa_eq = nfa_eq.trim()
@@ -126,7 +130,7 @@ def rmc_loop_nfa(nfa_eq, nfa_sol, rrts):
             rrt.rename_states()
             fado_aut = rrt.get_nfa().trim()
             #fado_aut.eliminateEpsilonTransitions()
-            fado_aut = fado_aut.minimal().toNFA()
+            fado_aut = fado_aut.minimal().trim().toNFA()
             #fado_aut = fado_aut.lrEquivNFA()
             fado_aut.renameStates()
             curr_nfa = disjoint_union(curr_nfa, fado_aut)
@@ -134,7 +138,6 @@ def rmc_loop_nfa(nfa_eq, nfa_sol, rrts):
         if (curr_nfa.Initial & curr_nfa.Final) != set():
             return True
 
-        #print("{0} {1}".format(len(curr_nfa.States), len(all_nfa.States)))
         all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
         comp = all_nfa.__invert__()
         comp.renameStates()
@@ -145,7 +148,7 @@ def rmc_loop_nfa(nfa_eq, nfa_sol, rrts):
         all_nfa = disjoint_union(all_nfa.toNFA(), curr_nfa)
         all_nfa = all_nfa.toDFA()
         nfa_eq = copy(curr_nfa)
-        nfa_eq = nfa_eq.trim()
+        #nfa_eq = nfa_eq.trim()
 
 
 

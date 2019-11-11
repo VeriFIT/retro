@@ -33,12 +33,17 @@ trim ("(delim in1)" "(delim in2)") \
      () \
      trim
 
-trim ("(var in2)") \
+trim ("(= in1 in2)") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     trim
+
+trim ("(var in2)" "(not (= in1 in2))") \
      ("out1 <- eps" "out2 <- eps") \
      ("x1 <- in2" "y1a <- in1") \
      y1a_act
 
-trim ("(var in1)") \
+trim ("(var in1)" "(not (= in1 in2))") \
      ("out1 <- eps" "out2 <- eps") \
      ("x1 <- in1" "y2a <- in2") \
      y2a_act
@@ -73,11 +78,6 @@ y2a_y2b_act ("(blank in2)") \
      ("out1 <- in1" "out2 <- y2a") \
      ("y2a <- y2b" "y2b <- null") \
      y2a_act
-
-#r_neco ("(blank in2)") \
-#     ("out1 <- in1" "out2 <- y2a") \
-#     ("y2a <- null") \
-#     fin
 
 no_act ("(not (= x1 in1))" "(not (= x1 in2))" "(not (delim in1))") \
      ("out1 <- in1" "out2 <- in2") \

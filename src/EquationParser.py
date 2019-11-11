@@ -92,14 +92,19 @@ def parse_equations(fd):
     nfa = None
     content = fd.readlines()
 
-    for i in range(0, len(content)):
-        ret =  parse_single_equation(content[i])
+    for line in content:
+        ret.append(parse_single_equation(line))
+
+    ret = sorted(ret, key=len)
+    ret.reverse()
+
+    for i in range(0, len(ret)):
         if i != 0:
-            ret.insert(0, (Symbol.delimiter(), Symbol.delimiter()))
+            ret[i].insert(0, (Symbol.delimiter(), Symbol.delimiter()))
         if nfa is not None:
-            nfa = nfa.concat(nfa_from_string(ret))
+            nfa = nfa.concat(nfa_from_string(ret[i]))
         else:
-            nfa = nfa_from_string(ret)
+            nfa = nfa_from_string(ret[i])
 
     return nfa
 
