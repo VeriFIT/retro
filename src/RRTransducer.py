@@ -2,6 +2,7 @@
 
 #from dataclasses import dataclass
 from typing import Callable, List, Tuple, Dict
+from LabelNFA import *
 
 from FAdo.fa import *
 
@@ -42,7 +43,7 @@ class RRTTransition:
 
 class RRTransducer:
 
-    def __init__(self, name, in_vars, out_vars, hist_regs, stack_regs, init, fin, trans):
+    def __init__(self, name, in_vars, out_vars, hist_regs, stack_regs, init, fin, trans, lab=None):
         self._name = name
         self._in_vars = in_vars
         self._out_vars = out_vars
@@ -51,6 +52,7 @@ class RRTransducer:
         self._init = init
         self._fin = fin
         self._trans = trans
+        self._label = lab
 
     def __str__(self):
         ret = "@RRT\n"
@@ -147,6 +149,33 @@ class RRTransducer:
         return ret
 
 
+    @staticmethod
+    def get_nielsen_rule(dct):
+        x1 = None
+        x2 = None
+        try:
+            x1 = dct["x1"]
+        except KeyError:
+            return None
+        try:
+            x2 = dct["x2"]
+        except KeyError:
+            return "{0} -> eps".format(str(x1))
+        return "{0} -> {1} {2}".format(str(x1), str(x2), str(x1))
+
+
+    @staticmethod
+    def compute_label(label, dct, src):
+        try:
+            return label[src]
+        except KeyError:
+            if "x1" in dct:
+                return RRTransducer.get_nielsen_rule(dct)
+            else:
+                return None
+
+
+
     ############################################################################
     def product(self, nfa):
         """
@@ -158,6 +187,7 @@ class RRTransducer:
         finals = set()
         trans = dict()
         com_states = set(copy(inits))
+        label = dict()
 
         state_stack = list()
         state_stack = copy(inits)
@@ -177,20 +207,36 @@ class RRTransducer:
                     if (s1,s2) not in trans:
                         trans[(s1, s2)] = list()
                     for dst2 in list(dst2_set):
+                        reg_upd = RRTransducer._register_symbol(tr1.reg_update, varsym)
                         trans[(s1, s2)].append(RRTTransition((s1, s2), \
                             rm_grds, RRTransducer._register_symbol(tr1.tape_update, varsym),\
-                            RRTransducer._register_symbol(tr1.reg_update, varsym), \
+                            reg_upd, \
                             (tr1.dest, dst2), sym))
 
                         dst_state = (tr1.dest, dst2)
                         if dst_state not in com_states:
                             com_states.add(dst_state)
+
+                            dct = dict(reg_upd)
+
+                            label[dst_state] = RRTransducer.compute_label(label, dct, (s1, s2))
+                            try:
+                                print(dst_state, label[dst_state], (s1, s2))
+                            except KeyError:
+                                print(dst_state, label[dst_state], None)
+
                             state_stack.append(dst_state)
                             if (dst2 in nfa.Final) and (tr1.dest in self._fin):
                                 finals.add(dst_state)
 
+
+        for st in inits:
+            label[st] = None
+
+        print(label)
+
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
-            self._hist_regs, self._stack_regs, inits, list(finals), trans)
+            self._hist_regs, self._stack_regs, inits, list(finals), trans, label)
 
 
     ############################################################################
@@ -213,6 +259,7 @@ class RRTransducer:
         state_dict, cnt = RRTransducer._state_dict(state_dict, cnt, self._init)
         state_dict, cnt = RRTransducer._state_dict(state_dict, cnt, self._fin)
         trans = list()
+        label = dict()
 
         for src, tr_list in self._trans.items():
             tran_copy_list = list()
@@ -236,9 +283,14 @@ class RRTransducer:
                 tran_copy_list.append(tran_copy)
             trans.append((src_ren, tran_copy_list))
 
+
+        for st, val in self._label.items():
+            label[state_dict[st]] = val
+
         self._trans = dict(trans)
         self._init = list(map(lambda x: state_dict[x], self._init))
         self._fin = list(map(lambda x: state_dict[x], self._fin))
+        self._label = label
 
 
     ############################################################################
@@ -259,6 +311,7 @@ class RRTransducer:
         states = set()
         state_stack = list()
         trans = dict()
+        label = dict()
 
         for ini in self._init:
             states.add((ini, self._regs_null()))
@@ -269,6 +322,7 @@ class RRTransducer:
 
         while state_stack:
             s, regs = state_stack.pop()
+            label[(s, regs)] = self._label[s]
             if s in self._fin:
                 finals.add((s, regs))
             if s not in self._trans:
@@ -292,7 +346,7 @@ class RRTransducer:
                     states.add(dest)
 
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
-            self._hist_regs, self._stack_regs, inits, list(finals), trans)
+            self._hist_regs, self._stack_regs, inits, list(finals), trans, label)
 
 
     ############################################################################
@@ -338,3 +392,27 @@ class RRTransducer:
         for ini in self._init:
             ret.addInitial(ini)
         return ret
+
+
+    ############################################################################
+    def get_label_nfa(self):
+        """
+        Convert flattened RRT to Labelled NFA. Assumes numbered states (starting with 0).
+        """
+
+        ret = NFA()
+        states = set(self._init)
+        fins = set(self._fin)
+        states = states | fins
+        for src, tr_list in self._trans.items():
+            for tr in tr_list:
+                states.add(tr.src)
+                states.add(tr.dest)
+                ret.addTransition(tr.src, self._symbol_from_tape(dict(tr.tape_update)), tr.dest)
+        for st in states:
+            ret.addState(st)
+        for fin in fins:
+            ret.addFinal(fin)
+        for ini in self._init:
+            ret.addInitial(ini)
+        return LabelNFA(ret, self._label)
