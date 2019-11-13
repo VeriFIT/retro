@@ -7,6 +7,7 @@ import time
 
 import RRTransducer
 from Symbol import *
+from LabelNFA import *
 from NFAOperation import *
 from RRTParser import parse_rrt, autdict2RRTransducer
 from EquationParser import parse_equations, nfa_from_string
@@ -116,6 +117,66 @@ def rmc_loop_dfa(nfa_eq, nfa_sol, rrts):
         nfa_eq = nfa_eq.trim()
 
 
+def rmc_loop_nfa_model(nfa_eq, nfa_sol, rrts):
+    all_nfa = copy(nfa_eq)
+    nfa_eq = LabelNFA(nfa_eq, None)
+    cnt = 1
+
+    while True:
+        prods = [item.product(nfa_eq.nfa, nfa_eq.label) for item in rrts]
+        flatten = list()
+        for item in prods:
+            flatten.append(item.flatten())
+
+        l_curr_nfa = LabelNFA()
+        lst = list()
+        for rrt in flatten:
+            rrt.rename_states()
+
+            l_nfa = rrt.get_label_nfa().trim()
+            l_nfa.eliminateEpsilonTransitions()
+            l_nfa.renameStates()
+
+
+            lst.append(l_nfa.split_automata())
+            # for ls in lst:
+            #     for i in ls:
+            #         print(i.dotFormat())
+
+            #l_curr_nfa = l_curr_nfa.disjointUnion(l_nfa)
+
+
+
+        lbl = list()
+        union = list()
+        for item in lst:
+            for aut in item:
+                if aut.nfa not in union:
+                    union.append(aut.nfa)
+                    lbl.append(aut)
+
+        print(len(union))
+
+        l_curr_nfa = LabelNFA.unionFromList(lbl)
+
+        if (l_curr_nfa.nfa.Initial & l_curr_nfa.nfa.Final) != set():
+            item = list(l_curr_nfa.nfa.Initial & l_curr_nfa.nfa.Final)[0]
+            #print(l_curr_nfa.label[item])
+            return True
+
+        all_nfa.Sigma = all_nfa.Sigma.union(l_curr_nfa.nfa.Sigma)
+        comp = all_nfa.__invert__()
+        comp.renameStates()
+        if onthefly_empty_NFA(comp.toNFA(), l_curr_nfa.nfa):
+            return False
+
+        all_nfa.renameStates()
+        all_nfa = disjoint_union(all_nfa.toNFA(), l_curr_nfa.nfa.minimal().toNFA())
+        all_nfa = all_nfa.toDFA()
+        nfa_eq = copy(l_curr_nfa)
+        #nfa_eq = nfa_eq.trim()
+
+
 def rmc_loop_nfa(nfa_eq, nfa_sol, rrts):
     all_nfa = copy(nfa_eq)
 
@@ -131,8 +192,8 @@ def rmc_loop_nfa(nfa_eq, nfa_sol, rrts):
             fado_aut = rrt.get_nfa().trim()
             #fado_aut.eliminateEpsilonTransitions()
             fado_aut = fado_aut.minimal().trim().toNFA()
-            #fado_aut = fado_aut.lrEquivNFA()
             fado_aut.renameStates()
+
             curr_nfa = disjoint_union(curr_nfa, fado_aut)
 
         if (curr_nfa.Initial & curr_nfa.Final) != set():
@@ -172,7 +233,7 @@ if __name__ == '__main__':
     trs = list(map (parse_rrt, fd_aut))
     rrts = list(map (autdict2RRTransducer, trs))
 
-    ret = rmc_loop_nfa(nfa_eq, nfa_sol, rrts)
+    ret = rmc_loop_nfa_model(nfa_eq, nfa_sol, rrts)
     if ret:
         print("Sat")
     else:

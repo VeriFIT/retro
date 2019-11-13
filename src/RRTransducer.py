@@ -177,7 +177,7 @@ class RRTransducer:
 
 
     ############################################################################
-    def product(self, nfa):
+    def product(self, nfa, lab_orig=None):
         """
         Product (composition) of NFA in FAdo and RRT. Instantiate all input
         variables (with a possible guard-sat check) with values from the
@@ -221,7 +221,10 @@ class RRTransducer:
                             com_states.add(dst_state)
 
                             dct = dict(reg_upd)
-                            label[dst_state] = RRTransducer.get_nielsen_rule(dct)
+                            rule = RRTransducer.get_nielsen_rule(dct)
+                            if (rule is not None) and (lab_orig is not None):
+                                rule = rule + "|" + str(lab_orig[dst2])
+                            label[dst_state] = rule
 
                             state_stack.append(dst_state)
                             if (dst2 in nfa.Final) and (tr1.dest in self._fin):
@@ -311,7 +314,7 @@ class RRTransducer:
         state_stack = list(copy(states))
         inits = copy(state_stack)
         finals = set()
-        
+
         for st in inits:
             label[st] = None
 
