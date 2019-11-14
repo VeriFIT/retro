@@ -210,7 +210,7 @@ def get_rule(word, rrts):
     image = rrts[1].prod_out_str(word)
     if image is not None:
         return image, nielsen_rule(word, image, 0)
-    raise Exception("Inconsistent solution")
+    return word, None
 
 
 def get_model(word, rrts):
@@ -219,7 +219,8 @@ def get_model(word, rrts):
     image = None
     for rrt_pair in rrts:
         image, rule = get_rule(word, rrt_pair)
-        rules.append(rule)
+        if rule is not None:
+            rules.append(rule)
         word = image
 
     model = dict()
