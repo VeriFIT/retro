@@ -79,3 +79,29 @@ def disjoint_union(fa1, fa2):
             for dst in dst_set:
                 nfa.addTransition(src+st_num, sym, dst+st_num)
     return nfa
+
+
+def contains_solution(nfa):
+    inits = list(nfa.Initial)
+    com_states = set(copy(inits))
+
+    state_stack = list()
+    state_stack = copy(inits)
+
+    while state_stack:
+        s = state_stack.pop()
+
+        if (s in nfa.Final):
+            return True
+
+        if (s not in nfa.delta):
+            continue
+        for sym, dst_set in nfa.delta[s].items():
+            if sym[0] != sym[1]:
+                continue
+
+            for dst in dst_set:
+                if dst not in com_states:
+                    com_states.add(dst)
+                    state_stack.append(dst)
+    return False

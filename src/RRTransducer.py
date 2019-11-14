@@ -187,13 +187,13 @@ class RRTransducer:
         finals = set()
         trans = dict()
         com_states = set(copy(inits))
-        label = dict()
+        #label = dict()
 
         state_stack = list()
         state_stack = copy(inits)
 
-        for st in inits:
-            label[st] = None
+        # for st in inits:
+        #     label[st] = None
 
         while state_stack:
             s1, s2 = state_stack.pop()
@@ -220,18 +220,18 @@ class RRTransducer:
                         if dst_state not in com_states:
                             com_states.add(dst_state)
 
-                            dct = dict(reg_upd)
-                            rule = RRTransducer.get_nielsen_rule(dct)
-                            if (rule is not None) and (lab_orig is not None):
-                                rule = rule + "|" + str(lab_orig[dst2])
-                            label[dst_state] = rule
+                            # dct = dict(reg_upd)
+                            # rule = RRTransducer.get_nielsen_rule(dct)
+                            # if (rule is not None) and (lab_orig is not None):
+                            #     rule = rule + "|" + str(lab_orig[dst2])
+                            # label[dst_state] = rule
 
                             state_stack.append(dst_state)
                             if (dst2 in nfa.Final) and (tr1.dest in self._fin):
                                 finals.add(dst_state)
 
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
-            self._hist_regs, self._stack_regs, inits, list(finals), trans, label)
+            self._hist_regs, self._stack_regs, inits, list(finals), trans)
 
 
     ############################################################################
@@ -254,7 +254,7 @@ class RRTransducer:
         state_dict, cnt = RRTransducer._state_dict(state_dict, cnt, self._init)
         state_dict, cnt = RRTransducer._state_dict(state_dict, cnt, self._fin)
         trans = list()
-        label = dict()
+        #label = dict()
 
         for src, tr_list in self._trans.items():
             tran_copy_list = list()
@@ -279,13 +279,13 @@ class RRTransducer:
             trans.append((src_ren, tran_copy_list))
 
 
-        for st, val in self._label.items():
-            label[state_dict[st]] = val
+        # for st, val in self._label.items():
+        #     label[state_dict[st]] = val
 
         self._trans = dict(trans)
         self._init = list(map(lambda x: state_dict[x], self._init))
         self._fin = list(map(lambda x: state_dict[x], self._fin))
-        self._label = label
+        #self._label = label
 
 
     ############################################################################
@@ -315,8 +315,8 @@ class RRTransducer:
         inits = copy(state_stack)
         finals = set()
 
-        for st in inits:
-            label[st] = None
+        # for st in inits:
+        #     label[st] = None
 
         while state_stack:
             s, regs = state_stack.pop()
@@ -340,15 +340,15 @@ class RRTransducer:
                     trans[(s, regs)] = list()
                 trans[(s, regs)].append(RRTTransition((s, regs), [], tp_update, [], dest, tr.label))
                 if dest not in states:
-                    if self._label[tr.dest] is not None:
-                        label[dest] = self._label[tr.dest]
-                    else:
-                        label[dest] = label[(s, regs)]
+                    # if self._label[tr.dest] is not None:
+                    #     label[dest] = self._label[tr.dest]
+                    # else:
+                    #     label[dest] = label[(s, regs)]
                     state_stack.append(dest)
                     states.add(dest)
 
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
-            self._hist_regs, self._stack_regs, inits, list(finals), trans, label)
+            self._hist_regs, self._stack_regs, inits, list(finals), trans)
 
 
     ############################################################################
@@ -370,6 +370,45 @@ class RRTransducer:
         if eps_cnt == len(self._out_vars):
             return Epsilon
         return tuple(lst)
+
+
+    ############################################################################
+    def prod_out_str(self, word):
+        inits = RRTransducer._cart_list_prod(self._init, [0])
+        words = dict()
+        com_states = set(copy(inits))
+
+        state_stack = list()
+        state_stack = copy(inits)
+
+        for st in inits:
+           words[st] = []
+
+        while state_stack:
+            s1, index = state_stack.pop()
+
+            if (s1 in self._fin) and (index == len(word)):
+                return words[(s1, index)]
+
+            if s1 not in self._trans:
+                continue
+            for tr in self._trans[s1]:
+                ind = None
+                symbol = self._symbol_from_tape(dict(tr.tape_update))
+                if symbol == Epsilon:
+                    ind = index
+                elif symbol != word[index]:
+                    continue
+                else:
+                    ind = index + 1
+
+                dst_state = (tr.dest, ind)
+                if dst_state not in com_states:
+                    com_states.add(dst_state)
+                    state_stack.append(dst_state)
+                    words[dst_state] = words[(s1, index)] + [tr.label]
+
+        return None
 
 
     ############################################################################

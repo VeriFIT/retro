@@ -177,8 +177,69 @@ def rmc_loop_nfa_model(nfa_eq, nfa_sol, rrts):
         #nfa_eq = nfa_eq.trim()
 
 
+def nielsen_rule(word1, word2, rule):
+    fst2 = None
+    for ch in word2:
+        if ch[0] != ch[1]:
+            fst2 = ch
+            break
+
+    if rule == 1:
+        if fst2[0].isvar and fst2[0] == word1[0][0]:
+            return (fst2[0], fst2[1])
+        if fst2[1].isvar and fst2[1] == word1[0][1]:
+            return (fst2[1], fst2[0])
+        if word1[0][0].is_blank() and word1[0][1].is_blank():
+            return nielsen_rule(word1, word2, 0)
+        else:
+            raise Exception("Non-matching word {0}; {1} -- {2}.".format(word1, word2, rule))
+    if rule == 0:
+        if fst2[1].isvar and fst2[0] == word1[0][0]:
+            return (fst2[1], "Eps")
+        if fst2[0].isvar and fst2[1] == word1[0][1]:
+            return (fst2[0], "Eps")
+        else:
+            raise Exception("Non-matching word {0}, {1}.".format(word1, word2))
+
+
+def get_rule(word, rrts):
+    image = rrts[0].prod_out_str(word)
+    if image is not None:
+        return image, nielsen_rule(word, image, 1)
+
+    image = rrts[1].prod_out_str(word)
+    if image is not None:
+        return image, nielsen_rule(word, image, 0)
+    raise Exception("Inconsistent solution")
+
+
+def get_model(word, rrts):
+    rrts.reverse()
+    rules = list()
+    image = None
+    for rrt_pair in rrts:
+        image, rule = get_rule(word, rrt_pair)
+        rules.append(rule)
+        word = image
+
+    model = dict()
+
+    for rule in rules:
+        if rule[1] == "Eps":
+            model[rule[0]] = []
+        else:
+            if rule[1].isvar and (rule[1] not in model):
+                model[rule[1]] = []
+            if rule[1].isvar:
+                model[rule[0]] = model[rule[1]] + model[rule[0]]
+            else:
+                model[rule[0]] = [rule[1]] + model[rule[0]]
+    return model
+
+
 def rmc_loop_nfa(nfa_eq, nfa_sol, rrts):
     all_nfa = copy(nfa_eq)
+    trans_history = list()
 
     while True:
         prods = [item.product(nfa_eq.toNFA()) for item in rrts]
@@ -187,16 +248,22 @@ def rmc_loop_nfa(nfa_eq, nfa_sol, rrts):
             flatten.append(item.flatten())
 
         curr_nfa = NFA()
+        trans = list()
         for rrt in flatten:
             rrt.rename_states()
+            trans.append(rrt)
+
             fado_aut = rrt.get_nfa().trim()
-            #fado_aut.eliminateEpsilonTransitions()
             fado_aut = fado_aut.minimal().trim().toNFA()
             fado_aut.renameStates()
 
             curr_nfa = disjoint_union(curr_nfa, fado_aut)
 
+        trans_history.append(trans)
+
         if (curr_nfa.Initial & curr_nfa.Final) != set():
+            word = [(Symbol.blank(), Symbol.blank())]
+            print(get_model(word, trans_history))
             return True
 
         all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
@@ -233,7 +300,7 @@ if __name__ == '__main__':
     trs = list(map (parse_rrt, fd_aut))
     rrts = list(map (autdict2RRTransducer, trs))
 
-    ret = rmc_loop_nfa_model(nfa_eq, nfa_sol, rrts)
+    ret = rmc_loop_nfa(nfa_eq, nfa_sol, rrts)
     if ret:
         print("Sat")
     else:
