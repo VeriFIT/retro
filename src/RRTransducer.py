@@ -390,6 +390,8 @@ class RRTransducer:
             if (s1 in self._fin) and (index == len(word)):
                 return words[(s1, index)]
 
+            if index == len(word):
+                continue
             if s1 not in self._trans:
                 continue
             for tr in self._trans[s1]:
