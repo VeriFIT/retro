@@ -22,6 +22,21 @@ class RRTGuardAct:
         return self.name
 
 
+class RRTUpdateAct:
+    def __init__(self, val, guard=None):
+        self.val = val
+        self.guard = guard
+
+    def is_func(self):
+        return (self.guard != None)
+
+    def __str__(self):
+        if self.is_func():
+            return str(self.guard)
+        else:
+            return "@" + str(self.val)
+
+
 class RRTTransition:
     # src: str
     # guard: List[RRTGuardAct]
@@ -75,36 +90,58 @@ class RRTransducer:
     ############################################################################
     @staticmethod
     def _guard_subs(guard, sub):
-        assert len(guard.vars) <= 2
-        assert len(sub) == 1
+        #assert len(guard.vars) <= 2
+        #assert len(sub) == 1
 
         name = guard.name
         varsk = set(sub.keys())
         vars = [item for item in guard.vars if item not in varsk]
         for var, sb in sub.items():
             name = name.replace(var, str(sb))
-            if guard.vars.index(var) == 0:
-                pred = lambda y: guard.pred(sb, y)
-            else:
-                pred = lambda y: guard.pred(y, sb)
+        pred = lambda *x: guard.pred(*RRTransducer._expand_guard_par(x, sub, guard.vars, vars))
         return RRTGuardAct(name, vars, pred)
+
+
+    @staticmethod
+    def _expand_guard_par(params, sub, vars_bef, vars_aft):
+        dct = dict(zip(vars_aft, params))
+        dct.update(sub)
+        ret = [ dct[x] for x in vars_bef]
+        return ret
+
+
+    @staticmethod
+    def _single_guard_sat(varsym, guard):
+        dec = True
+        params_pairs = dict(filter(lambda x: x[0] in guard.vars, varsym.items()))
+        if not set(guard.vars) <= set(varsym.keys()):
+            rem_grds = RRTransducer._guard_subs(guard, params_pairs)
+            return None, rem_grds #too hard to decide now
+
+        params = list(params_pairs.values())
+        return guard.pred(*params), None
 
 
     ############################################################################
     def _guard_sat(self, varsym, guards):
         rem_grds = []
         dec = True
-        var_set = set(self._in_vars)
 
         for gr in guards:
-            params_pairs = dict(filter(lambda x: x[0] in gr.vars, varsym.items()))
-            if not set(gr.vars) <= set(varsym.keys()):
-                rem_grds.append(RRTransducer._guard_subs(gr, params_pairs))
-                dec = None
-                continue #too hard to decide now
-
-            params = list(params_pairs.values())
-            if not gr.pred(*params):
+            # params_pairs = dict(filter(lambda x: x[0] in gr.vars, varsym.items()))
+            # if not set(gr.vars) <= set(varsym.keys()):
+            #     rem_grds.append(RRTransducer._guard_subs(gr, params_pairs))
+            #     dec = None
+            #     continue #too hard to decide now
+            #
+            # params = list(params_pairs.values())
+            # if not gr.pred(*params):
+            #     return False, []
+            dec, grd_add = RRTransducer._single_guard_sat(varsym, gr)
+            if dec is None:
+                rem_grds.append(grd_add)
+                continue
+            if dec == False:
                 return False, []
         return dec, rem_grds
 
@@ -135,41 +172,45 @@ class RRTransducer:
         for reg, up in update:
             if up == "null":
                 ret.append((reg, None))
-                continue
-            if up == "eps":
+            elif up == "eps":
                 ret.append((reg, Symbol.epsilon()))
-                continue
-            if up in varsym:
+            elif up in varsym:
                 ret.append((reg, varsym[up]))
+            elif isinstance(up, RRTUpdateAct):
+                dec, rem = RRTransducer._single_guard_sat(varsym, up.guard)
+                if dec is None:
+                    ret.append((reg, RRTUpdateAct(None, rem)))
+                else:
+                    ret.append((reg, dec))
             else:
                 ret.append((reg, up))
         return ret
 
 
-    @staticmethod
-    def get_nielsen_rule(dct):
-        x1 = None
-        x2 = None
-        try:
-            x1 = dct["x1"]
-        except KeyError:
-            return None
-        try:
-            x2 = dct["x2"]
-        except KeyError:
-            return "{0} -> eps".format(str(x1))
-        return "{0} -> {1} {2}".format(str(x1), str(x2), str(x1))
-
-
-    @staticmethod
-    def compute_label(label, dct, src):
-        try:
-            return label[src]
-        except KeyError:
-            if "x1" in dct:
-                return RRTransducer.get_nielsen_rule(dct)
-            else:
-                return None
+    # @staticmethod
+    # def get_nielsen_rule(dct):
+    #     x1 = None
+    #     x2 = None
+    #     try:
+    #         x1 = dct["x1"]
+    #     except KeyError:
+    #         return None
+    #     try:
+    #         x2 = dct["x2"]
+    #     except KeyError:
+    #         return "{0} -> eps".format(str(x1))
+    #     return "{0} -> {1} {2}".format(str(x1), str(x2), str(x1))
+    #
+    #
+    # @staticmethod
+    # def compute_label(label, dct, src):
+    #     try:
+    #         return label[src]
+    #     except KeyError:
+    #         if "x1" in dct:
+    #             return RRTransducer.get_nielsen_rule(dct)
+    #         else:
+    #             return None
 
 
 
@@ -195,13 +236,19 @@ class RRTransducer:
                 continue
             for tr1 in self._trans[s1]:
                 for sym, dst2_set in nfa.delta[s2].items():
-                    varsym = dict(zip(self._in_vars, list(sym)))
+                    lst = None
+                    if isinstance(sym, tuple):
+                        lst = list(sym)+[sym]
+                    else:
+                        lst = [sym]*len(self._in_vars)
+                    varsym = dict(zip(self._in_vars, lst))
                     sat, rm_grds = self._guard_sat(varsym, tr1.guard)
                     if sat == False:
                         continue
 
                     if (s1,s2) not in trans:
                         trans[(s1, s2)] = list()
+                    #varsym_act = dict(zip(self._in_vars, list(map(RRTUpdateAct, sym))+[RRTUpdateAct(sym)]))
                     for dst2 in list(dst2_set):
                         reg_upd = RRTransducer._register_symbol(tr1.reg_update, varsym)
                         trans[(s1, s2)].append(RRTTransition((s1, s2), \
@@ -306,8 +353,11 @@ class RRTransducer:
                 varsym = dict(regs)
                 sat, rm_grds = self._guard_sat(varsym, tr.guard)
                 if sat is None or len(rm_grds) > 0:
+                    print(str(tr.guard[0].vars))
                     raise Exception("Guard with free variables")
+
                 if sat == False:
+                    print(varsym, tr.guard[1], RRTransducer._single_guard_sat(varsym, tr.guard[1]), RRTransducer._single_guard_sat(varsym, tr.guard[0]))
                     continue
 
                 tp_update = RRTransducer._register_symbol(tr.tape_update, varsym)
@@ -332,15 +382,21 @@ class RRTransducer:
         """
         lst = list()
         eps_cnt = 0
+        no_eps = False
         for out in self._out_vars:
-            sym = tape_update[out]
-            if sym.is_eps():
-                eps_cnt = eps_cnt + 1
-            lst.append(sym)
+            try:
+                sym = tape_update[out]
+                if sym.is_eps():
+                    eps_cnt = eps_cnt + 1
+                else:
+                    no_eps = True
+                lst.append(sym)
+            except KeyError:
+                pass
 
-        assert (eps_cnt == 0) or (eps_cnt == len(self._out_vars))
+        assert (eps_cnt == 0) or (eps_cnt > 0 and (not no_eps))
 
-        if eps_cnt == len(self._out_vars):
+        if eps_cnt > 0:
             return Epsilon
         return tuple(lst)
 

@@ -2,6 +2,7 @@
 # Parser of restricted register transducers in the VTF format
 
 import collections
+import functools
 
 from RRTransducer import *
 from VTFParser import parsevtf
@@ -118,57 +119,102 @@ def parse_rrt(fd):
 
 
 ###########################################
-def parse_guard(line):
+def parse_guard(res, line):
     if line[0] == "(" and line[-1] == ")":
         line = line[1:-1]
         if line.startswith("="):
-            vars = parse_vars(line[2:])
-            return RRTGuardAct(line, vars, lambda x, y: x == y)
+            all, vars = parse_vars(line[2:], res)
+            pred = lambda x, y: x == y
+            return RRTGuardAct(line, vars, lambda *x: pred(*_expand_params(x, all, vars)))
         if line.startswith("var"):
-            vars = parse_vars(line[4:])
-            return RRTGuardAct(line, vars, lambda x: x.isvar)
+            all, vars = parse_vars(line[4:], res)
+            return RRTGuardAct(line, vars, lambda x: x.is_var())
         if line.startswith("char"):
-            vars = parse_vars(line[5:])
-            return RRTGuardAct(line, vars, lambda x: not x.isvar)
+            all, vars = parse_vars(line[5:], res)
+            return RRTGuardAct(line, vars, lambda x: not x.is_var())
         if line.startswith("isempty"):
-            vars = parse_vars(line[8:])
+            all, vars = parse_vars(line[8:], res)
             return RRTGuardAct(line, vars, lambda x: x == "")
         if line.startswith("blank"):
-            vars = parse_vars(line[6:])
+            all, vars = parse_vars(line[6:], res)
             return RRTGuardAct(line, vars, lambda x: x.is_blank())
         if line.startswith("delim"):
-            vars = parse_vars(line[6:])
+            all, vars = parse_vars(line[6:], res)
             return RRTGuardAct(line, vars, lambda x: x.is_delim())
+        if line.startswith("proj"):
+            all, vars = parse_vars(line[5:], res)
+            pred = lambda x, y, z: x.proj(y) == z
+            return RRTGuardAct(line, vars, lambda *x: pred(*_expand_params(x, all, vars)))
         if line.startswith("not"):
-            rt = parse_guard(line[4:])
-            if len(rt.vars) == 1:
-                return RRTGuardAct(line, rt.vars, lambda x: not rt.pred(x))
-            elif len(rt.vars) == 2:
-                return RRTGuardAct(line, rt.vars, lambda x, y: not rt.pred(x, y))
-            else:
-                raise Exception("Too many free variables {0}".format(rt.vars))
+            rt = parse_guard(res, line[4:])
+            #if len(rt.vars) == 1:
+            return RRTGuardAct(line, rt.vars, lambda *x: not rt.pred(*x))
+            # elif len(rt.vars) == 2:
+            #     return RRTGuardAct(line, rt.vars, lambda x, y: not rt.pred(x, y))
+            # else:
+            #     raise Exception("Too many free variables {0}".format(rt.vars))
     else:
         raise Exception("Unexpected guard form. {0}".format(line))
 
 
-###########################################
-def parse_vars(line):
-    return line.split()
+def _expand_params(params, in_list, vars):
+    ret = []
+    i = 0
+    for item in in_list:
+        if item in vars:
+            ret.append(params[i])
+            i += 1
+        else:
+            ret.append(item)
+    return ret
 
+
+
+def parse_update(res, pair):
+    out, line = pair
+    if line[0] == "(" and line[-1] == ")":
+        line = line[1:-1]
+        if line.startswith("sub"):
+            all, vars = parse_vars(line[4:], res)
+            pred = lambda x, y, z: x.sub(y, z)
+            return (out, RRTUpdateAct(line, RRTGuardAct(line, vars, lambda *x: pred(*_expand_params(x, all, vars)))))
+        raise Exception("Unexpected update form {0}.".format(line))
+    return (out, line)
+
+
+
+###########################################
+def parse_vars(line, res):
+    all = line.split()
+    all = list(map(functools.partial(_convert_const_symbol, res), all))
+    vars = list(filter(lambda x: x in res, all))
+    return all, vars
+
+
+def _convert_const_symbol(res, item):
+    if item in res:
+        return item
+    else:
+        return Symbol(0, ord(item))
 
 ###########################################
 def autdict2RRTransducer(aut_dict):
     trans = dict()
+    regs = set()
+    regs = regs.union(set(aut_dict["History-Regs"]))
+    regs = regs.union(set(aut_dict["Input-Track-Vars"]))
+    regs = regs.union(set(aut_dict["Stack-Regs"]))
     for key, lst in aut_dict["Transitions"].items():
         assert key not in trans
-        #grds = map(parse_guard, value[1])
-        trans[key] = list(map(lst2RRTTran, lst))
+        trans[key] = list(map(functools.partial(lst2RRTTran, regs), lst))
     return RRTransducer(aut_dict["Name"], aut_dict["Input-Track-Vars"], \
         aut_dict["Output-Track-Vars"], aut_dict["History-Regs"], \
         aut_dict["Stack-Regs"], aut_dict["Initial"], aut_dict["Final"], trans)
 
 
 ###########################################
-def lst2RRTTran(value):
-    grds = list(map(parse_guard, value[1]))
-    return RRTTransition(value[0], grds, list(value[2].items()), list(value[3].items()), value[4])
+def lst2RRTTran(regs, value):
+    grds = list(map(functools.partial(parse_guard, regs), value[1]))
+    tape_upd = list(map(functools.partial(parse_update, regs), value[2].items()))
+    reg_upd = list(map(functools.partial(parse_update, regs), value[3].items()))
+    return RRTTransition(value[0], grds, tape_upd, reg_upd, value[4])

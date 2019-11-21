@@ -1,8 +1,8 @@
 # Transducer performing X -> eps rule
 @RRT
 %Name X->eps
-%Input-Track-Vars in1 in2
-%Output-Track-Vars out1 out2
+%Input-Track-Vars in1 in2 in
+%Output-Track-Vars out1 out2 out
 %History-Regs x1 x2
 %Stack-Regs y1a y1b y2a y2b
 %Initial init

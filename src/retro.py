@@ -185,18 +185,18 @@ def nielsen_rule(word1, word2, rule):
             break
 
     if rule == 1:
-        if fst2[0].isvar and fst2[0] == word1[0][0]:
+        if fst2[0].is_var() and fst2[0] == word1[0][0]:
             return (fst2[0], fst2[1])
-        if fst2[1].isvar and fst2[1] == word1[0][1]:
+        if fst2[1].is_var() and fst2[1] == word1[0][1]:
             return (fst2[1], fst2[0])
         if word1[0][0].is_blank() and word1[0][1].is_blank():
             return nielsen_rule(word1, word2, 0)
         else:
             raise Exception("Non-matching word {0}; {1} -- {2}.".format(word1, word2, rule))
     if rule == 0:
-        if fst2[1].isvar and fst2[0] == word1[0][0]:
+        if fst2[1].is_var() and fst2[0] == word1[0][0]:
             return (fst2[1], "Eps")
-        if fst2[0].isvar and fst2[1] == word1[0][1]:
+        if fst2[0].is_var() and fst2[1] == word1[0][1]:
             return (fst2[0], "Eps")
         else:
             raise Exception("Non-matching word {0}, {1}.".format(word1, word2))
@@ -229,9 +229,9 @@ def get_model(word, rrts):
         if rule[1] == "Eps":
             model[rule[0]] = []
         else:
-            if rule[1].isvar and (rule[1] not in model):
+            if rule[1].is_var() and (rule[1] not in model):
                 model[rule[1]] = []
-            if rule[1].isvar:
+            if rule[1].is_var():
                 model[rule[0]] = model[rule[1]] + model[rule[0]]
             else:
                 model[rule[0]] = [rule[1]] + model[rule[0]]
