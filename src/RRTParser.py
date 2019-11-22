@@ -123,26 +123,26 @@ def parse_guard(res, line):
     if line[0] == "(" and line[-1] == ")":
         line = line[1:-1]
         if line.startswith("="):
-            all, vars = parse_vars(line[2:], res)
+            all, vars = parse_vars(line[2:], res, _convert_const_symbol)
             pred = lambda x, y: x == y
             return RRTGuardAct(line, vars, lambda *x: pred(*_expand_params(x, all, vars)))
         if line.startswith("var"):
-            all, vars = parse_vars(line[4:], res)
+            all, vars = parse_vars(line[4:], res, _convert_const_symbol)
             return RRTGuardAct(line, vars, lambda x: x.is_var())
         if line.startswith("char"):
-            all, vars = parse_vars(line[5:], res)
+            all, vars = parse_vars(line[5:], res, _convert_const_symbol)
             return RRTGuardAct(line, vars, lambda x: not x.is_var())
         if line.startswith("isempty"):
-            all, vars = parse_vars(line[8:], res)
+            all, vars = parse_vars(line[8:], res, _convert_const_symbol)
             return RRTGuardAct(line, vars, lambda x: x == "")
         if line.startswith("blank"):
-            all, vars = parse_vars(line[6:], res)
+            all, vars = parse_vars(line[6:], res, _convert_const_symbol)
             return RRTGuardAct(line, vars, lambda x: x.is_blank())
         if line.startswith("delim"):
-            all, vars = parse_vars(line[6:], res)
+            all, vars = parse_vars(line[6:], res, _convert_const_symbol)
             return RRTGuardAct(line, vars, lambda x: x.is_delim())
         if line.startswith("proj"):
-            all, vars = parse_vars(line[5:], res)
+            all, vars = parse_vars(line[5:], res, _convert_const_symbol)
             pred = lambda x, y, z: x.proj(y) == z
             return RRTGuardAct(line, vars, lambda *x: pred(*_expand_params(x, all, vars)))
         if line.startswith("not"):
@@ -175,7 +175,7 @@ def parse_update(res, pair):
     if line[0] == "(" and line[-1] == ")":
         line = line[1:-1]
         if line.startswith("sub"):
-            all, vars = parse_vars(line[4:], res)
+            all, vars = parse_vars(line[4:], res, _convert_const_int)
             pred = lambda x, y, z: x.sub(y, z)
             return (out, RRTUpdateAct(line, RRTGuardAct(line, vars, lambda *x: pred(*_expand_params(x, all, vars)))))
         raise Exception("Unexpected update form {0}.".format(line))
@@ -184,9 +184,9 @@ def parse_update(res, pair):
 
 
 ###########################################
-def parse_vars(line, res):
+def parse_vars(line, res, fnc):
     all = line.split()
-    all = list(map(functools.partial(_convert_const_symbol, res), all))
+    all = list(map(functools.partial(fnc, res), all))
     vars = list(filter(lambda x: x in res, all))
     return all, vars
 
@@ -196,6 +196,13 @@ def _convert_const_symbol(res, item):
         return item
     else:
         return Symbol(0, ord(item))
+
+
+def _convert_const_int(res, item):
+    if item in res:
+        return item
+    else:
+        return int(item)
 
 ###########################################
 def autdict2RRTransducer(aut_dict):

@@ -248,7 +248,6 @@ class RRTransducer:
 
                     if (s1,s2) not in trans:
                         trans[(s1, s2)] = list()
-                    #varsym_act = dict(zip(self._in_vars, list(map(RRTUpdateAct, sym))+[RRTUpdateAct(sym)]))
                     for dst2 in list(dst2_set):
                         reg_upd = RRTransducer._register_symbol(tr1.reg_update, varsym)
                         trans[(s1, s2)].append(RRTTransition((s1, s2), \
@@ -357,7 +356,6 @@ class RRTransducer:
                     raise Exception("Guard with free variables")
 
                 if sat == False:
-                    print(varsym, tr.guard[1], RRTransducer._single_guard_sat(varsym, tr.guard[1]), RRTransducer._single_guard_sat(varsym, tr.guard[0]))
                     continue
 
                 tp_update = RRTransducer._register_symbol(tr.tape_update, varsym)

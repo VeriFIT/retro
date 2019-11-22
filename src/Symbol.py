@@ -67,7 +67,7 @@ class Symbol:
     def sub(self, var, val):
         ret = cp_mod.copy(self)
         dct = dict(ret.val)
-        dct.update({var: val.val})
+        dct.update({var: val})
         ret.val = frozenset(dct.items())
         return ret
 
