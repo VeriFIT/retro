@@ -90,9 +90,6 @@ class RRTransducer:
     ############################################################################
     @staticmethod
     def _guard_subs(guard, sub):
-        #assert len(guard.vars) <= 2
-        #assert len(sub) == 1
-
         name = guard.name
         varsk = set(sub.keys())
         vars = [item for item in guard.vars if item not in varsk]
@@ -128,15 +125,6 @@ class RRTransducer:
         dec = True
 
         for gr in guards:
-            # params_pairs = dict(filter(lambda x: x[0] in gr.vars, varsym.items()))
-            # if not set(gr.vars) <= set(varsym.keys()):
-            #     rem_grds.append(RRTransducer._guard_subs(gr, params_pairs))
-            #     dec = None
-            #     continue #too hard to decide now
-            #
-            # params = list(params_pairs.values())
-            # if not gr.pred(*params):
-            #     return False, []
             dec, grd_add = RRTransducer._single_guard_sat(varsym, gr)
             if dec is None:
                 rem_grds.append(grd_add)
@@ -185,34 +173,6 @@ class RRTransducer:
             else:
                 ret.append((reg, up))
         return ret
-
-
-    # @staticmethod
-    # def get_nielsen_rule(dct):
-    #     x1 = None
-    #     x2 = None
-    #     try:
-    #         x1 = dct["x1"]
-    #     except KeyError:
-    #         return None
-    #     try:
-    #         x2 = dct["x2"]
-    #     except KeyError:
-    #         return "{0} -> eps".format(str(x1))
-    #     return "{0} -> {1} {2}".format(str(x1), str(x2), str(x1))
-    #
-    #
-    # @staticmethod
-    # def compute_label(label, dct, src):
-    #     try:
-    #         return label[src]
-    #     except KeyError:
-    #         if "x1" in dct:
-    #             return RRTransducer.get_nielsen_rule(dct)
-    #         else:
-    #             return None
-
-
 
     ############################################################################
     def product(self, nfa, lab_orig=None):
