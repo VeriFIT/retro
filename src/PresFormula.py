@@ -1,5 +1,6 @@
 
-import intertools
+import itertools
+import math
 from enum import Enum
 from collections import namedtuple
 from FAdo.fa import *
@@ -7,10 +8,12 @@ from FAdo.fa import *
 PresNFA = namedtuple("PresNFA", "vars nfa")
 
 class PresFormulaType(Enum):
-    ATOM = 0
     CONJ = 1
     DISJ = 2
     NEG = 3
+    LEQ = 4
+    LE = 5
+    EQ = 6
 
 
 class PresFormula:
@@ -21,31 +24,58 @@ class PresFormula:
         self.value = value
 
 
+    def __str__(self):
+        ret = str()
+        all = ", ".join([str(fl) for fl in self.formulas])
+        ret += "({0} {1} {2})".format(self.type, self.value, all)
+        return ret
+
+    def __repr__(self):
+        return self.__str__()
+
+
     def translate_to_nfa(self):
-        if self.type == ATOM:
-            return PresFormula._atom_to_dfa(self.type[0], self.type[1], self.type[2])
-        elif self.type == CONJ:
+        if self.type == PresFormulaType.LEQ:
+            print(self.value)
+            return PresFormula._leq_to_dfa(self.value[0], self.value[1], self.value[2])
+        elif self.type == PresFormulaType.LE:
+            print(self.value)
+            return PresFormula._leq_to_dfa(self.value[0], self.value[1], self.value[2], True)
+        elif self.type == PresFormulaType.EQ:
+            print(self.value)
+            return PresFormula._eq_to_dfa(self.value[0], self.value[1], self.value[2])
+        elif self.type == PresFormulaType.CONJ:
             aut1 = self.formulas[0].translate_to_nfa()
             aut2 = self.formulas[1].translate_to_nfa()
             if aut1.vars != aut2.vars:
                 vars = aut1.vars + aut2.vars
-                aut1 = PresFormula._expand_aut_vars(aut1, vars)
-                aut2 = PresFormula._expand_aut_vars(aut2, vars)
+                aut1 = PresFormula.expand_aut_vars(aut1, vars)
+                aut2 = PresFormula.expand_aut_vars(aut2, vars)
             return PresNFA(vars, aut1.nfa.conjunction(aut2.nfa))
-        elif self.type == CONJ:
+        elif self.type == PresFormulaType.DISJ:
             aut1 = self.formulas[0].translate_to_nfa()
             aut2 = self.formulas[1].translate_to_nfa()
             if aut1.vars != aut2.vars:
                 vars = aut1.vars + aut2.vars
-                aut1 = PresFormula._expand_aut_vars(aut1, vars)
-                aut2 = PresFormula._expand_aut_vars(aut2, vars)
-            return PresNFA(vars, aut1.nfa.conjunction(aut2.nfa))
-        elif self.type == NEG:
+                aut1 = PresFormula.expand_aut_vars(aut1, vars)
+                aut2 = PresFormula.expand_aut_vars(aut2, vars)
+            return PresNFA(vars, aut1.nfa.disjunction(aut2.nfa))
+        elif self.type == PresFormulaType.NEG:
             aut = self.formulas[0].translate_to_nfa()
-            aut.nfa.setSigma(PresFormula._alphabet(new_vars))
+            aut.nfa.setSigma(PresFormula._alphabet(aut.vars))
             compl = aut.nfa.__invert__()
             return PresNFA(aut.vars, compl)
-        raise Exception("Not implemented type of formula.")
+        raise Exception("Not implemented type of formula {0}".format(str(self)))
+
+
+    def translate_to_nfa_vars(self, vars):
+        aut = self.translate_to_nfa()
+        return PresFormula.expand_aut_vars(aut, vars)
+
+
+    def translate_to_nfa_vars_sym(self, vars):
+        aut = self.translate_to_nfa()
+        return PresFormula.expand_aut_vars_sym(aut, vars)
 
 
     @staticmethod
@@ -69,23 +99,56 @@ class PresFormula:
 
 
     @staticmethod
-    def _atom_to_dfa(a_lst, vars, b):
+    def _leq_to_dfa(a_lst, vars, b, strict=False):
         aut = NFA()
         stack = list([b])
         n = len(vars)
         states = set()
+        states.add(b)
+        aut.addState(b)
 
         while stack:
             k = stack.pop()
-            states.add(k)
-            index_src = aut.addState(k)
-            if k >= 0:
+            index_src = aut.stateIndex(k)
+            if (not strict) and k >= 0:
                 aut.addFinal(index_src)
-
+            if strict and k > 0:
+                aut.addFinal(index_src)
             for vec in PresFormula._all_combinations(n):
                 j = math.floor((k - PresFormula._dot_product(a_lst,vec))/2.0)
                 if not j in states:
                     stack.append(j)
+                    states.add(j)
+                    aut.addState(j)
+                index_dest = aut.stateIndex(j)
+                aut.addTransition(index_src, PresFormula._create_symbol(vars, vec), index_dest)
+        aut.addInitial(aut.stateIndex(b))
+
+        return PresNFA(set(vars), aut)
+
+
+    @staticmethod
+    def _eq_to_dfa(a_lst, vars, b):
+        aut = NFA()
+        stack = list([b])
+        n = len(vars)
+        states = set()
+        states.add(b)
+        aut.addState(b)
+
+        while stack:
+            k = stack.pop()
+            index_src = aut.stateIndex(k)
+            if k == 0:
+                aut.addFinal(index_src)
+            for vec in PresFormula._all_combinations(n):
+                if (k - PresFormula._dot_product(a_lst,vec)) % 2 != 0:
+                    continue
+                j = math.floor((k - PresFormula._dot_product(a_lst,vec))/2.0)
+                if not j in states:
+                    stack.append(j)
+                    states.add(j)
+                    aut.addState(j)
                 index_dest = aut.stateIndex(j)
                 aut.addTransition(index_src, PresFormula._create_symbol(vars, vec), index_dest)
         aut.addInitial(aut.stateIndex(b))
@@ -103,7 +166,20 @@ class PresFormula:
             return [sym]
 
         for vec in PresFormula._all_combinations(n):
-            ret.append(frozenset(sym_list + PresFormula._create_symbol(vars, vec)))
+            ret.append(frozenset(sym_lst + list(PresFormula._create_symbol(vars, vec))))
+        return ret
+
+
+    @staticmethod
+    def _expand_symbol_sym(sym, vars):
+        n = len(vars)
+        sym_lst = list(sym)
+        ret = list()
+
+        if n == 0:
+            return [sym]
+
+        ret.append(frozenset(sym_lst + list(zip(vars, "?"*n))))
         return ret
 
 
@@ -114,8 +190,14 @@ class PresFormula:
 
 
     @staticmethod
-    def _expand_aut_vars(pres_aut, new_vars):
-        add_vars = new_vars - pres_aut.vars
+    def _diff(fst, snd):
+        snd = set(snd)
+        return [item for item in fst if item not in snd]
+
+
+    @staticmethod
+    def expand_aut_vars(pres_aut, new_vars):
+        add_vars = PresFormula._diff(new_vars, pres_aut.vars)
         aut_dup = pres_aut.nfa.dup()
         trans = dict()
 
@@ -123,6 +205,21 @@ class PresFormula:
             trans[state] = dict()
             for sym, dst_set in dct.items():
                 for ex_symbol in PresFormula._expand_symbol(sym, add_vars):
+                    trans[state][ex_symbol] = dst_set
+        aut_dup.delta = trans
+        return PresNFA(new_vars, aut_dup)
+
+
+    @staticmethod
+    def expand_aut_vars_sym(pres_aut, new_vars):
+        add_vars = PresFormula._diff(new_vars, pres_aut.vars)
+        aut_dup = pres_aut.nfa.dup()
+        trans = dict()
+
+        for state, dct in pres_aut.nfa.delta.items():
+            trans[state] = dict()
+            for sym, dst_set in dct.items():
+                for ex_symbol in PresFormula._expand_symbol_sym(sym, add_vars):
                     trans[state][ex_symbol] = dst_set
         aut_dup.delta = trans
         return PresNFA(new_vars, aut_dup)

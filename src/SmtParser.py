@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-from EqFormula import *
+from SmtFormula import *
 
 op_map = {"str.++": EqFormulaType.CONCAT, "str.len": EqFormulaType.LEN, \
     "=": EqFormulaType.EQ, "<": EqFormulaType.LE, "<=": EqFormulaType.LEQ, \
     ">": EqFormulaType.GE, ">=": EqFormulaType.GEQ, \
     "declare-fun": EqFormulaType.DECL, "assert": EqFormulaType.ASSERT, \
-    "check-sat": EqFormulaType.CHECK, "set-logic": EqFormulaType.LOGIC_DECL}
+    "check-sat": EqFormulaType.CHECK, "set-logic": EqFormulaType.LOGIC_DECL,
+    "*": EqFormulaType.MULT, "+": EqFormulaType.PLUS }
 
 def get_name_token(line):
     line = line.strip()
@@ -22,16 +23,6 @@ def get_name_token(line):
 
 def get_op_type(name):
     return op_map[name]
-
-
-# def get_blocks(line):
-#     ret = list()
-#     block, line = get_single_block(line)
-#     while block is not None:
-#         ret.append(block)
-#         block, line = get_single_block(line)
-#
-#     return ret
 
 
 def parse_atom_token(line):
@@ -52,27 +43,6 @@ def parse_atom_token(line):
         else:
             i += 1
     return atom.strip(), str()
-
-
-
-# def parse_atoms(line):
-#     ret = list()
-#     line = line.strip()
-#
-#     atom, line = parse_atom_token(line)
-#     while len(atom) > 0:
-#         ret.append(atom.strip())
-#         atom, line = parse_atom_token(line)
-#
-#     return ret
-
-
-# def get_atoms(line):
-#     fles = list()
-#     for atom in parse_atoms(line):
-#         type, val = parse_single_atom(atom)
-#         fles.append(EqFormula(type, list(), val))
-#     return fles
 
 
 def get_blocks(line):
@@ -118,7 +88,7 @@ def get_single_block_brace(line):
 def parse_single_atom(line):
     if line.startswith("\""):
         return EqFormulaType.LITER, line[1:-1]
-    if line.isdigit():
+    if line.isdigit() or (line[0] == "-" and line[1:].isdigit()):
         return EqFormulaType.CONST, int(line)
     else:
         return EqFormulaType.VAR, line
@@ -127,7 +97,8 @@ def parse_single_atom(line):
 def parse_single_line(line):
     line = line.strip()
     if (line[0] != "(") or (line[-1] != ")"):
-        return parse_single_atom(line)
+        type, val = parse_single_atom(line)
+        return SmtFormula(type, [], val)
 
     line = line[1:-1]
     if len(line) == 0:
@@ -138,10 +109,10 @@ def parse_single_line(line):
     formulas = list()
     for bl in get_blocks(line):
         formulas.append(parse_single_line(bl))
-    return EqFormula(type, formulas)
+    return SmtFormula(type, formulas)
 
 
-def parse_file(fd):
+def parse_smt_file(fd):
     ret = list()
     content = fd.readlines()
 

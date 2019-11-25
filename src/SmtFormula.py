@@ -19,9 +19,11 @@ class EqFormulaType(Enum):
     CHECK = 11
     LITER = 12
     LOGIC_DECL = 13
+    MULT = 14
+    PLUS = 15
 
 
-class EqFormula:
+class SmtFormula:
 
     def __init__(self, type, formulas, value=None):
         self.type = type
@@ -58,6 +60,7 @@ class EqFormula:
             for fl in self.formulas:
                 if not fl.is_str_equation():
                     return False
+            return True
         elif self.type == EqFormulaType.VAR or self.type == EqFormulaType.LITER:
             return True
         else:
@@ -67,11 +70,21 @@ class EqFormula:
     def is_constraint(self):
         if self.type in [EqFormulaType.ASSERT, EqFormulaType.EQ, \
             EqFormulaType.LE, EqFormulaType.LEQ, EqFormulaType.GE, \
-            EqFormulaType.GEQ]:
+            EqFormulaType.GEQ, EqFormulaType.MULT, EqFormulaType.PLUS, EqFormulaType.LEN]:
             for fl in self.formulas:
-                if not fl.is_str_equation():
+                if not fl.is_constraint():
                     return False
+            return True
         elif self.type == EqFormulaType.VAR or self.type == EqFormulaType.CONST:
             return True
         else:
             return False
+
+
+    def get_variables(self):
+        if self.type == EqFormulaType.VAR:
+            return [self.value]
+        ret = list()
+        for fl in self.formulas:
+            ret = ret + fl.get_variables()
+        return ret

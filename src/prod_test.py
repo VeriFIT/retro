@@ -9,6 +9,8 @@ from LabelNFA import *
 from NFAOperation import *
 from RRTParser import parse_rrt, autdict2RRTransducer
 from EquationParser import parse_equations, nfa_from_string
+from SmtParser import *
+from SmtWrapper import *
 
 from FAdo.fa import *
 
@@ -44,29 +46,39 @@ if __name__ == '__main__':
         print("Invalid number of arguments: at least 2 are required")
         sys.exit(1)
 
-    nfa_eq = parse_equations(fd_eq)
-    nfa_eq = nfa_eq.minimal().toNFA()
+    # nfa_eq = parse_equations(fd_eq)
+    # nfa_eq = nfa_eq.minimal().toNFA()
+    #
+    # trs = parse_rrt(fd_aut)
+    # rrt = autdict2RRTransducer(trs)
+    #
+    # nfa = _tmp_nfa()
+    #
+    # print(rrt)
+    #
+    #
+    # prod = rrt.product(nfa)
+    # print(prod)
+    #
+    #
+    # flat = prod.flatten()
+    # flat.rename_states()
+    # print(flat)
+    #
+    # aut = flat.get_nfa()
+    # print(aut.dotFormat())
 
-    trs = parse_rrt(fd_aut)
-    rrt = autdict2RRTransducer(trs)
-
-    nfa = _tmp_nfa()
-
-    print(rrt)
-
-
-    prod = rrt.product(nfa)
-    print(prod)
-
-
-    flat = prod.flatten()
-    flat.rename_states()
-    print(flat)
-
-    aut = flat.get_nfa()
-    print(aut.dotFormat())
-
-
+    smt_for = parse_smt_file(fd_eq)
+    wrap = SmtWrapper(smt_for)
+    pres_for = wrap.get_conj_pres_formula()
+    vars = wrap.get_variables()
+    print(vars)
+    aut = pres_for.translate_to_nfa_vars_sym(vars)
+    nfa = aut.nfa
+    nfa.renameStates()
+    nfa = nfa.minimal()
+    nfa.renameStates()
+    print(nfa.dotFormat())
 
     fd_aut.close()
     fd_eq.close()
