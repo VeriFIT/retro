@@ -6,7 +6,7 @@ from FAdo.fa import *
 
 PresNFA = namedtuple("PresNFA", "vars nfa")
 
-class FormulaType(Enum):
+class PresFormulaType(Enum):
     ATOM = 0
     CONJ = 1
     DISJ = 2
@@ -45,7 +45,7 @@ class PresFormula:
             aut.nfa.setSigma(PresFormula._alphabet(new_vars))
             compl = aut.nfa.__invert__()
             return PresNFA(aut.vars, compl)
-        raise Exception("Not implemented type of formula.") 
+        raise Exception("Not implemented type of formula.")
 
 
     @staticmethod
