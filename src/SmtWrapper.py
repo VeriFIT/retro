@@ -46,10 +46,10 @@ class SmtWrapper:
         return ret
 
 
-    def get_str_equations(self):
+    def get_str_equations(self, var_dict):
         ret = list()
-        vars = self.get_variables()
-        var_dict = dict(zip(vars, range(len(vars))))
+        # vars = self.get_variables()
+        # var_dict = dict(zip(vars, range(len(vars))))
         for fl in self.formulas:
             if fl.is_str_equation():
                 eq_smt = fl.formulas[0]
@@ -77,6 +77,12 @@ class SmtWrapper:
             nfa = nfa.concat(delim)
             nfa = nfa.concat(len_constr)
         return nfa
+
+
+    def len_constr_rename_var(self, var_dict):
+        for fl in self.formulas:
+            if fl.is_constraint():
+                fl.map_variables(lambda x: var_dict[x])
 
 
     @staticmethod
@@ -185,7 +191,7 @@ class SmtWrapper:
             return SmtWrapper.get_str_equation_symbols(smt_formula.formulas[0], var_dict) + \
                 SmtWrapper.get_str_equation_symbols(smt_formula.formulas[1], var_dict)
         if smt_formula.type == EqFormulaType.VAR:
-            return [Symbol(True, var_dict[smt_formula.value])]
+            return [var_dict[smt_formula.value]]
         if smt_formula.type == EqFormulaType.LITER:
             str = ast.literal_eval("\"{0}\"".format(smt_formula.value))
             return list(map(lambda x: Symbol(False, ord(x)), str))

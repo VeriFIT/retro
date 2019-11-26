@@ -88,3 +88,11 @@ class SmtFormula:
         for fl in self.formulas:
             ret = ret + fl.get_variables()
         return ret
+
+
+    def map_variables(self, mp):
+        if self.type == EqFormulaType.VAR:
+            self.value = mp(self.value)
+        else:
+            for fl in self.formulas:
+                fl.map_variables(mp)

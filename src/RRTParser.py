@@ -145,7 +145,7 @@ def parse_guard(res, line):
             all, vars = parse_vars(line[6:], res, _convert_const_symbol)
             return RRTGuardAct(line, vars, lambda x: x.is_delim())
         if line.startswith("proj"):
-            all, vars = parse_vars(line[5:], res, _convert_const_symbol)
+            all, vars = parse_vars(line[5:], res, _convert_const_int)
             pred = lambda x, y, z: x.proj(y) == z
             return RRTGuardAct(line, vars, lambda *x: pred(*_expand_params(x, all, vars)))
         if line.startswith("not"):

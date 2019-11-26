@@ -312,10 +312,15 @@ class RRTransducer:
                 varsym = dict(regs)
                 sat, rm_grds = self._guard_sat(varsym, tr.guard)
                 if sat is None or len(rm_grds) > 0:
-                    print(str(tr.guard[0].vars))
                     raise Exception("Guard with free variables")
 
                 if sat == False:
+                    print(varsym)
+                    for gr in tr.guard:
+                        print(gr)
+                        print(RRTransducer._single_guard_sat(varsym, gr))
+                        print(gr.pred(Symbol(1, 1)))
+                    print()
                     continue
 
                 tp_update = RRTransducer._register_symbol(tr.tape_update, varsym)

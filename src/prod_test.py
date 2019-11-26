@@ -80,12 +80,19 @@ if __name__ == '__main__':
     # nfa.renameStates()
     # print(nfa.dotFormat())
 
-    pres_for = wrap.get_conj_pres_formula()
     vars = wrap.get_variables()
-    print(pres_for)
-    len_constr = pres_for.translate_to_nfa_vars(vars)
+    var_dict = list(zip(vars, range(len(vars))))
+    var_dict = dict(map(lambda x: (x[0], Symbol(1, x[1])), var_dict))
+    print(var_dict)
 
-    eqs = wrap.get_str_equations()
+    wrap.len_constr_rename_var(var_dict)
+
+    pres_for = wrap.get_conj_pres_formula()
+
+    print(pres_for)
+    len_constr = pres_for.translate_to_nfa_vars(var_dict.values())
+
+    eqs = wrap.get_str_equations(var_dict)
     nfa_eq = wrap.get_str_eq_automata(eqs, len_constr.nfa)
     nfa_eq = nfa_eq.minimal().toNFA()
     nfa_eq.renameStates()
@@ -100,12 +107,14 @@ if __name__ == '__main__':
 
     flatten = rrt.flatten()
     flatten.rename_states()
+
+    print(flatten)
     fado_aut = flatten.get_nfa().trim()
     fado_aut = fado_aut.minimal().trim().toNFA()
     fado_aut.renameStates()
 
 
-    #print(fado_aut.dotFormat())
+    print(fado_aut.dotFormat())
 
     fd_aut.close()
     fd_eq.close()
