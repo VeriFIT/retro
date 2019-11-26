@@ -1,0 +1,260 @@
+# Transducer performing X -> YX rule
+@RRT
+%Name X->YX
+%Input-Track-Vars in1 in2 in
+%Output-Track-Vars out1 out2 out
+%History-Regs x1 x2
+%Stack-Regs y1a y1b y2a y2b
+%Initial init
+%Final len_trim carry_1_prime carry_0
+
+
+init ("(var in1)" "(not (blank in2))" "(not (= in1 in2))") \
+     ("out1 <- eps" "out2 <- eps") \
+     ("x1 <- in1" "x2 <- in2" "y1a <- in1") \
+     y1a_act
+
+init ("(blank in1)" "(blank in2)") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     trim
+
+trim ("(blank in1)" "(blank in2)") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     trim
+
+trim ("(delim in1)" "(delim in2)") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     trim
+
+trim ("(= in1 in2)" "(not (len in1))") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     trim
+
+trim ("(var in1)" "(not (blank in2))" "(not (= in1 in2))") \
+     ("out1 <- eps" "out2 <- eps") \
+     ("x1 <- in1" "x2 <- in2" "y1a <- in1") \
+     y1a_act
+
+trim ("(var in2)" "(not (blank in1))" "(not (= in1 in2))") \
+     ("out1 <- eps" "out2 <- eps") \
+     ("x1 <- in2" "x2 <- in1" "y2a <- in2") \
+     y2a_act
+
+trim ("(len in1)" "(len in2)") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     len_trim
+
+len_trim () \
+     ("out <- eps") \
+     () \
+     len_trim
+
+init ("(= in1 in2)" "(not (blank in1))" "(not (len in1))") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     init
+
+y1a_act ("(not (= in1 x1))" "(not (= in2 x1))" "(not (blank in1))" "(not (delim in1))" "(not (len in1))") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- in1") \
+     y1a_act
+
+y1a_act ("(= in1 x1)" "(not (len in1))") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- x2" "y1b <- in1") \
+     y1a_y1b_act
+
+y1a_y1b_act ("(not (blank in1))" "(not (delim in1))" "(not (len in1))") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- y1b" "y1b <- in1") \
+     y1a_y1b_act
+
+y1a_y1b_act ("(blank in1)") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- y1b" "y1b <- null") \
+     y1a_act
+
+y1a_act ("(= in2 x1)" "(not (len in1))") \
+     ("out1 <- y1a" "out2 <- x2") \
+     ("y1a <- in1" "y2a <- x1") \
+     y1a_y2a_act
+
+y1a_y2a_act ("(not (blank in1))" "(not (blank in2))" "(not (delim in1))" "(not (len in1))") \
+     ("out1 <- y1a" "out2 <- y2a") \
+     ("y1a <- in1" "y1b <- in2") \
+     y1a_y2a_act
+
+y1a_y2a_act ("(blank in2)" "(not (blank in1))") \
+     ("out1 <- y1a" "out2 <- y2a") \
+     ("y1a <- in1" "y2a <- null") \
+     y1a_act
+
+y1a_y2a_act ("(blank in1)" "(not (blank in2))") \
+     ("out1 <- y1a" "out2 <- y2a") \
+     ("y1a <- null" "y2a <- in2") \
+     y2a_act
+
+y1a_y2a_act ("(blank in1)" "(blank in2)") \
+     ("out1 <- y1a" "out2 <- y2a") \
+     ("y1a <- null" "y2a <- null") \
+     no_act
+
+y2a_act ("(not (= x1 in1))" "(not (= x1 in2))" "(not (blank in2))" "(not (delim in2))" "(not (len in2))") \
+     ("out1 <- in1" "out2 <- y2a") \
+     ("y2a <- in2") \
+     y2a_act
+
+y2a_act ("(blank in2)" "(not (= in1 x1))") \
+     ("out1 <- in1" "out2 <- y2a") \
+     ("y2a <- null") \
+     no_act
+
+y1a_act ("(blank in1)" "(not (= in2 x1))") \
+     ("out1 <- y1a" "out2 <- in2") \
+     ("y1a <- null") \
+     no_act
+
+no_act ("(not (= in2 x1))" "(not (= in1 x1))" "(not (delim in1))" "(not (len in1))") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     no_act
+
+no_act ("(len in1)" "(len in2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     len_part
+
+new_eq ("(len in1)" "(len in2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     len_part
+
+len_part ("(var x2)") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     carry_0
+
+len_part ("(not (var x2))") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     carry_0_prime
+
+carry_0_prime ("(proj in x1 0)") \
+     ("out <- (sub in x1 1)") \
+     () \
+     carry_0_prime
+
+carry_0_prime ("(proj in x1 1)") \
+     ("out <- (sub in x1 0)") \
+     () \
+     carry_1_prime
+
+carry_1_prime () \
+     ("out <- in") \
+     () \
+     carry_1_prime
+
+carry_0 ("(proj in x1 0)" "(proj in x2 0)") \
+     ("out <- (sub in x1 0)") \
+     () \
+     carry_0
+
+carry_0 ("(proj in x1 1)" "(proj in x2 0)") \
+     ("out <- (sub in x1 1)") \
+     () \
+     carry_0
+
+carry_0 ("(proj in x1 1)" "(proj in x2 1)") \
+     ("out <- (sub in x1 0)") \
+     () \
+     carry_0
+
+carry_0 ("(proj in x1 0)" "(proj in x2 1)") \
+     ("out <- (sub in x1 1)") \
+     () \
+     carry_1
+
+carry_1 ("(proj in x1 1)" "(proj in x2 1)") \
+     ("out <- (sub in x1 1)") \
+     () \
+     carry_1
+
+carry_1 ("(proj in x1 0)" "(proj in x2 1)") \
+     ("out <- (sub in x1 0)") \
+     () \
+     carry_1
+
+carry_1 ("(proj in x1 0)" "(proj in x2 0)") \
+     ("out <- (sub in x1 1)") \
+     () \
+     carry_1
+
+carry_1 ("(proj in x1 1)" "(proj in x2 0)") \
+     ("out <- (sub in x1 0)") \
+     () \
+     carry_0
+
+no_act ("(delim in1)" "(delim in2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     new_eq
+
+new_eq ("(not (= x1 in1))" "(not (= x1 in2))" "(not (len in1))") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     new_eq
+
+new_eq ("(= in1 in2)" "(not (delim in1))" "(not (len in1))") \
+     ("out1 <- eps" "out2 <- eps") \
+     () \
+     new_eq
+
+new_eq ("(= x1 in1)" "(not (= in1 in2))" "(not (len in1))") \
+     ("out1 <- x2" "out2 <- in2") \
+     ("y1a <- x1") \
+     y1a_act
+
+new_eq ("(= x1 in2)" "(not (= in1 in2))" "(not (len in1))") \
+     ("out1 <- in1" "out2 <- x2") \
+     ("y2a <- x1") \
+     y2a_act
+
+no_act ("(= in2 x1)" "(not (len in1))") \
+     ("out1 <- in1" "out2 <- x2") \
+     ("y2a <- in2") \
+     y2a_act
+
+no_act ("(= in1 x1)" "(not (len in1))") \
+     ("out1 <- x2" "out2 <- in2") \
+     ("y1a <- in1") \
+     y1a_act
+
+init ("(var in2)" "(not (blank in1))" "(not (= in1 in2))") \
+     ("out1 <- eps" "out2 <- eps") \
+     ("x1 <- in2" "x2 <- in1" "y2a <- in2") \
+     y2a_act
+
+y2a_act ("(= in1 x1)" "(not (len in1))") \
+     ("out1 <- x2" "out2 <- y2a") \
+     ("y1a <- in1" "y2a <- in2") \
+     y1a_y2a_act
+
+y2a_act ("(= in2 x1)" "(not (len in1))") \
+     ("out1 <- in1" "out2 <- y2a") \
+     ("y2a <- x2" "y2b <- in2") \
+     y2a_y2b_act
+
+y2a_y2b_act ("(not (blank in2))" "(not (delim in2))" "(not (len in2))") \
+     ("out1 <- in1" "out2 <- y2a") \
+     ("y2a <- y2b" "y2b <- in2") \
+     y2a_y2b_act
+
+y2a_y2b_act ("(blank in2)") \
+     ("out2 <- y2a" "out1 <- in1") \
+     ("y2a <- y2b" "y2b <- null") \
+     y2a_act

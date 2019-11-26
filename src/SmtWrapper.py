@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+import ast
 from PresFormula import *
 from SmtFormula import *
 from itertools import chain
 from collections import defaultdict
+from Symbol import *
 
 conv_map = {EqFormulaType.LEQ: PresFormulaType.LEQ, \
     EqFormulaType.LE: PresFormulaType.LE, EqFormulaType.EQ: PresFormulaType.EQ}
@@ -18,7 +20,6 @@ class SmtWrapper:
         ret = list()
         for fl in self.formulas:
             if fl.is_constraint():
-                print(fl)
                 ret.append(SmtWrapper.get_pres_formula(fl))
         return ret
 
@@ -43,6 +44,57 @@ class SmtWrapper:
             if fl.is_var_decl():
                 ret.append(fl.formulas[0].value)
         return ret
+
+
+    def get_str_equations(self):
+        ret = list()
+        vars = self.get_variables()
+        var_dict = dict(zip(vars, range(len(vars))))
+        for fl in self.formulas:
+            if fl.is_str_equation():
+                eq_smt = fl.formulas[0]
+                assert eq_smt.type == EqFormulaType.EQ
+                left = SmtWrapper.get_str_equation_symbols(eq_smt.formulas[0], var_dict)
+                right = SmtWrapper.get_str_equation_symbols(eq_smt.formulas[1], var_dict)
+                left, right = SmtWrapper.pad_equation(left, right)
+                ret.append(list(zip(left, right)))
+        return ret
+
+
+    def get_str_eq_automata(self, eqs, len_constr=None):
+        nfa = None
+        n = len(eqs)
+        for i in range(0, n):
+            if i != 0:
+                eqs[i].insert(0, (Symbol.delimiter(), Symbol.delimiter()))
+            if nfa is not None:
+                nfa = nfa.concat(SmtWrapper.nfa_from_string(eqs[i]))
+            else:
+                nfa = SmtWrapper.nfa_from_string(eqs[i])
+
+        if len_constr is not None:
+            delim = SmtWrapper.nfa_from_string([(Symbol.len_delim(), Symbol.len_delim())], False)
+            nfa = nfa.concat(delim)
+            nfa = nfa.concat(len_constr)
+        return nfa
+
+
+    @staticmethod
+    def nfa_from_string(lst, sl=True):
+        states = list(range(0,len(lst)))
+        ret = NFA()
+        i = 0
+        for item in lst:
+            ret.addState(i)
+            ret.addTransition(i, item, i+1)
+            i = i + 1
+        ret.addState(i)
+        if sl:
+            ret.addTransition(i, (Symbol.blank(), Symbol.blank()), i)
+        ret.addFinal(i)
+        ret.addInitial(0)
+        return ret
+
 
 
     @staticmethod
@@ -124,3 +176,27 @@ class SmtWrapper:
             assert len(smt_formula.formulas) == 1
             return SmtWrapper.get_lin_vector(smt_formula.formulas[0])
         raise Exception("Unsupported behaviour")
+
+
+    @staticmethod
+    def get_str_equation_symbols(smt_formula, var_dict):
+        if smt_formula.type == EqFormulaType.CONCAT:
+            assert len(smt_formula.formulas) == 2
+            return SmtWrapper.get_str_equation_symbols(smt_formula.formulas[0], var_dict) + \
+                SmtWrapper.get_str_equation_symbols(smt_formula.formulas[1], var_dict)
+        if smt_formula.type == EqFormulaType.VAR:
+            return [Symbol(True, var_dict[smt_formula.value])]
+        if smt_formula.type == EqFormulaType.LITER:
+            str = ast.literal_eval("\"{0}\"".format(smt_formula.value))
+            return list(map(lambda x: Symbol(False, ord(x)), str))
+        raise Exception("Unsupported type of formula {0}".format(smt_formula))
+
+
+    @staticmethod
+    def pad_equation(left, right):
+        diff = len(left) - len(right)
+        if diff <= 0:
+            left = left + abs(diff)*[Symbol.blank()]
+        else:
+            right = right + diff*[Symbol.blank()]
+        return left, right

@@ -129,6 +129,9 @@ def parse_guard(res, line):
         if line.startswith("var"):
             all, vars = parse_vars(line[4:], res, _convert_const_symbol)
             return RRTGuardAct(line, vars, lambda x: x.is_var())
+        if line.startswith("len"):
+            all, vars = parse_vars(line[4:], res, _convert_const_symbol)
+            return RRTGuardAct(line, vars, lambda x: x.is_len_delim())
         if line.startswith("char"):
             all, vars = parse_vars(line[5:], res, _convert_const_symbol)
             return RRTGuardAct(line, vars, lambda x: not x.is_var())

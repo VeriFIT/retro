@@ -61,7 +61,7 @@ class Symbol:
 
     def proj(self, var):
         dct = dict(self.val)
-        return Symbol(0, ord(str(dct[var])))
+        return dct[var] #Symbol(0, ord(str(dct[var])))
 
 
     def sub(self, var, val):
@@ -113,3 +113,8 @@ class Symbol:
     @staticmethod
     def delimiter():
         return Symbol(False, -2)
+
+
+    @staticmethod
+    def len_delim():
+        return Symbol(False, -4)

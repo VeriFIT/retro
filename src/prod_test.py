@@ -70,15 +70,42 @@ if __name__ == '__main__':
 
     smt_for = parse_smt_file(fd_eq)
     wrap = SmtWrapper(smt_for)
+    # pres_for = wrap.get_conj_pres_formula()
+    # vars = wrap.get_variables()
+    # print(vars)
+    # aut = pres_for.translate_to_nfa_vars_sym(vars)
+    # nfa = aut.nfa
+    # nfa.renameStates()
+    # nfa = nfa.minimal()
+    # nfa.renameStates()
+    # print(nfa.dotFormat())
+
     pres_for = wrap.get_conj_pres_formula()
     vars = wrap.get_variables()
-    print(vars)
-    aut = pres_for.translate_to_nfa_vars_sym(vars)
-    nfa = aut.nfa
-    nfa.renameStates()
-    nfa = nfa.minimal()
-    nfa.renameStates()
-    print(nfa.dotFormat())
+    print(pres_for)
+    len_constr = pres_for.translate_to_nfa_vars(vars)
+
+    eqs = wrap.get_str_equations()
+    nfa_eq = wrap.get_str_eq_automata(eqs, len_constr.nfa)
+    nfa_eq = nfa_eq.minimal().toNFA()
+    nfa_eq.renameStates()
+    print(nfa_eq.dotFormat())
+
+    tr = parse_rrt(fd_aut)
+    rrt = autdict2RRTransducer(tr)
+
+    rrt = rrt.product(nfa_eq)
+
+    #print(rrt)
+
+    flatten = rrt.flatten()
+    flatten.rename_states()
+    fado_aut = flatten.get_nfa().trim()
+    fado_aut = fado_aut.minimal().trim().toNFA()
+    fado_aut.renameStates()
+
+
+    #print(fado_aut.dotFormat())
 
     fd_aut.close()
     fd_eq.close()

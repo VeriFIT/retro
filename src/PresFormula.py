@@ -1,6 +1,7 @@
 
 import itertools
 import math
+from Symbol import *
 from enum import Enum
 from collections import namedtuple
 from FAdo.fa import *
@@ -36,13 +37,10 @@ class PresFormula:
 
     def translate_to_nfa(self):
         if self.type == PresFormulaType.LEQ:
-            print(self.value)
             return PresFormula._leq_to_dfa(self.value[0], self.value[1], self.value[2])
         elif self.type == PresFormulaType.LE:
-            print(self.value)
             return PresFormula._leq_to_dfa(self.value[0], self.value[1], self.value[2], True)
         elif self.type == PresFormulaType.EQ:
-            print(self.value)
             return PresFormula._eq_to_dfa(self.value[0], self.value[1], self.value[2])
         elif self.type == PresFormulaType.CONJ:
             aut1 = self.formulas[0].translate_to_nfa()
@@ -95,7 +93,7 @@ class PresFormula:
 
     @staticmethod
     def _create_symbol(vars, vec):
-        return frozenset(zip(vars, vec))
+        return Symbol(2, frozenset(zip(vars, vec)))
 
 
     @staticmethod
@@ -159,34 +157,35 @@ class PresFormula:
     @staticmethod
     def _expand_symbol(sym, vars):
         n = len(vars)
-        sym_lst = list(sym)
+        sym_lst = list(sym.val)
         ret = list()
 
         if len(vars) == 0:
             return [sym]
 
         for vec in PresFormula._all_combinations(n):
-            ret.append(frozenset(sym_lst + list(PresFormula._create_symbol(vars, vec))))
+            sm = PresFormula._create_symbol(vars, vec)
+            ret.append(Symbol(2, frozenset(sym_lst + list(sm.val))))
         return ret
 
 
     @staticmethod
     def _expand_symbol_sym(sym, vars):
         n = len(vars)
-        sym_lst = list(sym)
+        sym_lst = list(sym.val)
         ret = list()
 
         if n == 0:
             return [sym]
 
-        ret.append(frozenset(sym_lst + list(zip(vars, "?"*n))))
+        ret.append(Symbol(2, frozenset(sym_lst + list(zip(vars, "?"*n)))))
         return ret
 
 
     @staticmethod
     def _alphabet(vars):
         n = len(vars)
-        return set([PresFormula._create_symbol(vec, vars) for vec in PresFormula._all_combinations(n)])
+        return set([PresFormula._create_symbol(vars, vec) for vec in PresFormula._all_combinations(n)])
 
 
     @staticmethod
