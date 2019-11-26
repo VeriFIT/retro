@@ -124,23 +124,23 @@ no_act ("(not (= in2 x1))" "(not (= in1 x1))" "(not (delim in1))" "(not (len in1
      () \
      no_act
 
-no_act ("(len in1)" "(len in2)") \
+no_act ("(len in1)" "(len in2)" "(var x2)") \
      ("out1 <- in1" "out2 <- in2") \
-     () \
-     len_part
-
-new_eq ("(len in1)" "(len in2)") \
-     ("out1 <- in1" "out2 <- in2") \
-     () \
-     len_part
-
-len_part ("(var x2)") \
-     ("out1 <- eps" "out2 <- eps") \
      () \
      carry_0
 
-len_part ("(not (var x2))") \
-     ("out1 <- eps" "out2 <- eps") \
+no_act ("(len in1)" "(len in2)" "(not (var x2))") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     carry_0_prime
+
+new_eq ("(len in1)" "(len in2)" "(var x2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     carry_0
+
+new_eq ("(len in1)" "(len in2)" "(not (var x2))") \
+     ("out1 <- in1" "out2 <- in2") \
      () \
      carry_0_prime
 

@@ -315,12 +315,6 @@ class RRTransducer:
                     raise Exception("Guard with free variables")
 
                 if sat == False:
-                    print(varsym)
-                    for gr in tr.guard:
-                        print(gr)
-                        print(RRTransducer._single_guard_sat(varsym, gr))
-                        print(gr.pred(Symbol(1, 1)))
-                    print()
                     continue
 
                 tp_update = RRTransducer._register_symbol(tr.tape_update, varsym)
@@ -361,7 +355,9 @@ class RRTransducer:
 
         if eps_cnt > 0:
             return Epsilon
-        return tuple(lst)
+        if len(lst) > 1:
+            return tuple(lst)
+        return lst[0]
 
 
     ############################################################################
