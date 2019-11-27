@@ -374,11 +374,10 @@ class RRTransducer:
 
         while state_stack:
             s1, index = state_stack.pop()
-
             if (s1 in self._fin) and (index == len(word)):
                 return words[(s1, index)]
 
-            if index == len(word):
+            if len(word) != 0 and index == len(word):
                 continue
             if s1 not in self._trans:
                 continue

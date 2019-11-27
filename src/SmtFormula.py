@@ -70,12 +70,17 @@ class SmtFormula:
     def is_constraint(self):
         if self.type in [EqFormulaType.ASSERT, EqFormulaType.EQ, \
             EqFormulaType.LE, EqFormulaType.LEQ, EqFormulaType.GE, \
-            EqFormulaType.GEQ, EqFormulaType.MULT, EqFormulaType.PLUS, EqFormulaType.LEN]:
+            EqFormulaType.GEQ, EqFormulaType.MULT, EqFormulaType.PLUS]:
             for fl in self.formulas:
                 if not fl.is_constraint():
                     return False
             return True
-        elif self.type == EqFormulaType.VAR or self.type == EqFormulaType.CONST:
+        elif self.type == EqFormulaType.LEN:
+            assert len(self.formulas) == 1
+            if self.formulas[0].type == EqFormulaType.VAR or self.formulas[0].type == EqFormulaType.CONST:
+                return True
+            return False
+        elif self.type == EqFormulaType.CONST:
             return True
         else:
             return False

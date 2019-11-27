@@ -28,7 +28,29 @@ def get_eq_nfa(smt_formula):
     nfa_eq = wrap.get_str_eq_automata(eqs, len_constr.nfa)
     nfa_eq = nfa_eq.minimal().toNFA()
     nfa_eq.renameStates()
-    return nfa_eq
+    return nfa_eq, var_dict
+
+
+def len_constr_word(word):
+    n = len(word)
+    len_constr = None
+    for i in range(n):
+        if isinstance(word[i], tuple) and word[i][0].is_len_delim() and word[i][1].is_len_delim():
+            len_constr = word[i+1:]
+            break
+    if len_constr is None:
+        return None
+
+    vars = dict(len_constr[0].val).keys()
+    base = 1
+    res = dict([(v,0) for v in vars])
+    for sym in len_constr:
+        dct = dict(sym.val)
+        for v in vars:
+            res[v] += base*dct[v]
+        base *= 2
+    return res
+
 
 
 def rmc_loop_nfa(nfa_eq, rrts):
@@ -56,21 +78,22 @@ def rmc_loop_nfa(nfa_eq, rrts):
         trans_history.append(trans)
 
         if (curr_nfa.Initial & curr_nfa.Final) != set():
-            word = [(Symbol.blank(), Symbol.blank())]
-            print(get_model(word, trans_history))
-            return True
+            word = []
+            word = trans_history[-1][1].prod_out_str(word)
+            lengths = len_constr_word(word)
+            model = get_model(word, lengths, trans_history)
+            return True, model
 
         all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
         comp = all_nfa.__invert__()
         comp.renameStates()
         if onthefly_empty_NFA(comp.toNFA(), curr_nfa):
-            return False
+            return False, None
 
         all_nfa.renameStates()
         all_nfa = disjoint_union(all_nfa.toNFA(), curr_nfa)
         all_nfa = all_nfa.toDFA()
         nfa_eq = copy(curr_nfa)
-        #nfa_eq = nfa_eq.trim()
 
 
 def nielsen_rule(word1, word2, rule):
@@ -109,7 +132,11 @@ def get_rule(word, rrts):
     return word, None
 
 
-def get_model(word, rrts):
+def rename_model(model, var_dict):
+    return dict([(var_dict[k], v) for k, v in model.items()])
+
+
+def get_model(word, lengths, rrts):
     rrts.reverse()
     rules = list()
     image = None
@@ -119,8 +146,9 @@ def get_model(word, rrts):
             rules.append(rule)
         word = image
 
-    print(word)
     model = dict()
+    for k, v in lengths.items():
+        model[k] = ["X"]*v
 
     for rule in rules:
         if rule[1] == "Eps":
@@ -170,14 +198,16 @@ if __name__ == '__main__':
     start_time = time.time()
 
     smt_for = parse_smt_file(fd_eq)
-    nfa_eq = get_eq_nfa(smt_for)
+    nfa_eq, var_dict = get_eq_nfa(smt_for)
+    var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
     ret = None
 
     trs = list(map (parse_rrt, fd_aut))
     rrts = list(map (autdict2RRTransducer, trs))
 
-    ret = rmc_loop_nfa(nfa_eq, rrts)
+    ret, model = rmc_loop_nfa(nfa_eq, rrts)
     if ret:
+        print(rename_model(model, var_dict_rev))
         print("Sat")
     else:
         print("Unsat")
@@ -189,38 +219,22 @@ if __name__ == '__main__':
     fd_eq.close()
 
 
-    # nfa_eq = parse_equations(fd_eq)
-    # nfa_eq = nfa_eq.minimal().toNFA()
+    # smt_for = parse_smt_file(fd_eq)
+    # nfa_eq = get_eq_nfa(smt_for)
     #
-    # trs = parse_rrt(fd_aut)
+    # trs = parse_rrt(fd_aut[0])
     # rrt = autdict2RRTransducer(trs)
     #
-    # nfa = _tmp_nfa()
     #
-    # print(rrt)
-    #
-    #
-    # prod = rrt.product(nfa)
-    # print(prod)
-    #
+    # prod = rrt.product(nfa_eq)
     #
     # flat = prod.flatten()
     # flat.rename_states()
-    # print(flat)
     #
-    # aut = flat.get_nfa()
-    # print(aut.dotFormat())
-
-
-    # tr = parse_rrt(fd_aut)
-    # rrt = autdict2RRTransducer(tr)
-    #
-    # smt_for = parse_smt_file(fd_eq)
-    # nfa_eq = get_eq_nfa(smt_for)
     # print(nfa_eq.dotFormat())
-
-
-
+    #
+    #
+    #
     # rrt = rrt.product(nfa_eq)
     #
     # #print(rrt)
@@ -236,5 +250,6 @@ if __name__ == '__main__':
     #
     # print(fado_aut.dotFormat())
     #
-    # fd_aut.close()
+    # for fd in fd_aut:
+    #     fd.close()
     # fd_eq.close()
