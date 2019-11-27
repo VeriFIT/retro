@@ -14,11 +14,12 @@ from SmtWrapper import *
 
 from FAdo.fa import *
 
-def get_eq_nfa(smt_formula):
+def get_eq_items(smt_formula):
     wrap = SmtWrapper(smt_formula)
     vars = wrap.get_variables()
     var_dict = list(zip(vars, range(len(vars))))
     var_dict = dict(map(lambda x: (x[0], Symbol(1, x[1])), var_dict))
+    is_len = False
 
     wrap.len_constr_rename_var(var_dict)
     pres_for = wrap.get_conj_pres_formula()
@@ -27,12 +28,14 @@ def get_eq_nfa(smt_formula):
     if pres_for is not None:
         len_constr = pres_for.translate_to_nfa_vars(var_dict.values())
         len_constr_nfa = len_constr.nfa
+        is_len = True
 
-    eqs = wrap.get_str_equations(var_dict)
+    eqs = wrap.get_str_equations_symbol(var_dict)
+    raw_eq = wrap.get_str_equations(var_dict)
     nfa_eq = wrap.get_str_eq_automata(eqs, len_constr_nfa)
     nfa_eq = nfa_eq.minimal().toNFA()
     nfa_eq.renameStates()
-    return nfa_eq, var_dict
+    return nfa_eq, var_dict, is_len, raw_eq
 
 
 def len_constr_word(word):
@@ -54,6 +57,28 @@ def len_constr_word(word):
             res[v] += base*dct[v]
         base *= 2
     return res
+
+
+def collect_eq_model(side, model):
+    ret = list()
+    for item in side:
+        if item.is_var():
+            try:
+                ret += model[item]
+            except KeyError:
+                pass
+        else:
+            ret.append(item)
+    return ret
+
+
+
+def check_model(model, raw_eq):
+    for eq in raw_eq:
+        left, right = eq
+        if collect_eq_model(left, model) != collect_eq_model(right, model):
+            return False
+    return True
 
 
 
@@ -198,22 +223,29 @@ if __name__ == '__main__':
         fd_aut = [open(sys.argv[i], "r") for i in range(2,argc) ]
     else:
         print("Invalid number of arguments: at least 2 are required")
+        print("\t[smt file] [x-yx len] [x-eps len] [x-yx] [x-eps]")
         sys.exit(1)
 
     start_time = time.time()
 
     smt_for = parse_smt_file(fd_eq)
-    nfa_eq, var_dict = get_eq_nfa(smt_for)
+    nfa_eq, var_dict, is_len, raw_eq = get_eq_items(smt_for)
     var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
     ret = None
 
     trs = list(map (parse_rrt, fd_aut))
     rrts = list(map (autdict2RRTransducer, trs))
 
+    if is_len:
+        rrts = rrts[0:2]
+    else:
+        rrts = rrts[2:4]
     ret, model = rmc_loop_nfa(nfa_eq, rrts)
     if ret:
-        print(rename_model(model, var_dict_rev))
+        ren_model = rename_model(model, var_dict_rev)
+        print(ren_model)
         print("Sat")
+        print("Model check: {0}".format(check_model(model, raw_eq)))
     else:
         print("Unsat")
 

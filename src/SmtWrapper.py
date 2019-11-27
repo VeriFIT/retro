@@ -48,10 +48,8 @@ class SmtWrapper:
         return ret
 
 
-    def get_str_equations(self, var_dict):
+    def get_str_equations_symbol(self, var_dict):
         ret = list()
-        # vars = self.get_variables()
-        # var_dict = dict(zip(vars, range(len(vars))))
         for fl in self.formulas:
             if fl.is_str_equation():
                 eq_smt = fl.formulas[0]
@@ -60,6 +58,18 @@ class SmtWrapper:
                 right = SmtWrapper.get_str_equation_symbols(eq_smt.formulas[1], var_dict)
                 left, right = SmtWrapper.pad_equation(left, right)
                 ret.append(list(zip(left, right)))
+        return ret
+
+
+    def get_str_equations(self, var_dict):
+        ret = list()
+        for fl in self.formulas:
+            if fl.is_str_equation():
+                eq_smt = fl.formulas[0]
+                assert eq_smt.type == EqFormulaType.EQ
+                left = SmtWrapper.get_str_equation_symbols(eq_smt.formulas[0], var_dict)
+                right = SmtWrapper.get_str_equation_symbols(eq_smt.formulas[1], var_dict)
+                ret.append((left, right))
         return ret
 
 
