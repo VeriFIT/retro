@@ -386,6 +386,8 @@ class RRTransducer:
                 symbol = self._symbol_from_tape(dict(tr.tape_update))
                 if symbol == Epsilon:
                     ind = index
+                elif len(word) == 0:
+                    continue
                 elif symbol != word[index]:
                     continue
                 else:

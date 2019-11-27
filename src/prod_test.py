@@ -22,10 +22,14 @@ def get_eq_nfa(smt_formula):
 
     wrap.len_constr_rename_var(var_dict)
     pres_for = wrap.get_conj_pres_formula()
-    len_constr = pres_for.translate_to_nfa_vars(var_dict.values())
+
+    len_constr_nfa = None
+    if pres_for is not None:
+        len_constr = pres_for.translate_to_nfa_vars(var_dict.values())
+        len_constr_nfa = len_constr.nfa
 
     eqs = wrap.get_str_equations(var_dict)
-    nfa_eq = wrap.get_str_eq_automata(eqs, len_constr.nfa)
+    nfa_eq = wrap.get_str_eq_automata(eqs, len_constr_nfa)
     nfa_eq = nfa_eq.minimal().toNFA()
     nfa_eq.renameStates()
     return nfa_eq, var_dict
@@ -147,8 +151,9 @@ def get_model(word, lengths, rrts):
         word = image
 
     model = dict()
-    for k, v in lengths.items():
-        model[k] = ["X"]*v
+    if lengths is not None:
+        for k, v in lengths.items():
+            model[k] = ["X"]*v
 
     for rule in rules:
         if rule[1] == "Eps":
@@ -217,39 +222,3 @@ if __name__ == '__main__':
     for fd in fd_aut:
         fd.close()
     fd_eq.close()
-
-
-    # smt_for = parse_smt_file(fd_eq)
-    # nfa_eq = get_eq_nfa(smt_for)
-    #
-    # trs = parse_rrt(fd_aut[0])
-    # rrt = autdict2RRTransducer(trs)
-    #
-    #
-    # prod = rrt.product(nfa_eq)
-    #
-    # flat = prod.flatten()
-    # flat.rename_states()
-    #
-    # print(nfa_eq.dotFormat())
-    #
-    #
-    #
-    # rrt = rrt.product(nfa_eq)
-    #
-    # #print(rrt)
-    #
-    # flatten = rrt.flatten()
-    # flatten.rename_states()
-    #
-    # #print(flatten)
-    # fado_aut = flatten.get_nfa().trim()
-    # fado_aut = fado_aut.minimal().trim().toNFA()
-    # fado_aut.renameStates()
-    #
-    #
-    # print(fado_aut.dotFormat())
-    #
-    # for fd in fd_aut:
-    #     fd.close()
-    # fd_eq.close()

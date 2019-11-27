@@ -86,7 +86,7 @@ y1a_act ("(= in2 x1)" "(not (len in1))") \
 
 y1a_y2a_act ("(not (blank in1))" "(not (blank in2))" "(not (delim in1))" "(not (len in1))") \
      ("out1 <- y1a" "out2 <- y2a") \
-     ("y1a <- in1" "y1b <- in2") \
+     ("y1a <- in1" "y2a <- in2") \
      y1a_y2a_act
 
 y1a_y2a_act ("(blank in2)" "(not (blank in1))") \

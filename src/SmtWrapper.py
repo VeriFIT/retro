@@ -29,6 +29,8 @@ class SmtWrapper:
         for fl in self.formulas:
             if fl.is_constraint():
                 ret.append(SmtWrapper.get_pres_formula(fl))
+        if len(ret) == 0:
+            return None
         if len(ret) == 1:
             return ret[0]
 
