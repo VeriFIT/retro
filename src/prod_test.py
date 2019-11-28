@@ -33,9 +33,10 @@ def get_eq_items(smt_formula):
     eqs = wrap.get_str_equations_symbol(var_dict)
     raw_eq = wrap.get_str_equations(var_dict)
     nfa_eq = wrap.get_str_eq_automata(eqs, len_constr_nfa)
+    str_nfa_eq = wrap.get_str_eq_automata(eqs)
     nfa_eq = nfa_eq.minimal().toNFA()
     nfa_eq.renameStates()
-    return nfa_eq, var_dict, is_len, raw_eq
+    return nfa_eq, var_dict, is_len, raw_eq, str_nfa_eq
 
 
 def len_constr_word(word):
@@ -229,25 +230,38 @@ if __name__ == '__main__':
     start_time = time.time()
 
     smt_for = parse_smt_file(fd_eq)
-    nfa_eq, var_dict, is_len, raw_eq = get_eq_items(smt_for)
+    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for)
     var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
     ret = None
 
     trs = list(map (parse_rrt, fd_aut))
-    rrts = list(map (autdict2RRTransducer, trs))
+    rrts_all = list(map (autdict2RRTransducer, trs))
 
     if is_len:
-        rrts = rrts[0:2]
+        rrts = rrts_all[2:4]
+        ret, _ = rmc_loop_nfa(str_eq, rrts)
+        if not ret:
+            print("Unsat")
+        else:
+            rrts = rrts_all[0:2]
+            ret, model = rmc_loop_nfa(nfa_eq, rrts)
+            if ret:
+                ren_model = rename_model(model, var_dict_rev)
+                print(ren_model)
+                print("Model check: {0}".format(check_model(model, raw_eq)))
+                print("Sat")
+            else:
+                print("Unsat")
     else:
-        rrts = rrts[2:4]
-    ret, model = rmc_loop_nfa(nfa_eq, rrts)
-    if ret:
-        ren_model = rename_model(model, var_dict_rev)
-        print(ren_model)
-        print("Model check: {0}".format(check_model(model, raw_eq)))
-        print("Sat")
-    else:
-        print("Unsat")
+        rrts = rrts_all[2:4]
+        ret, model = rmc_loop_nfa(nfa_eq, rrts)
+        if ret:
+            ren_model = rename_model(model, var_dict_rev)
+            print(ren_model)
+            print("Model check: {0}".format(check_model(model, raw_eq)))
+            print("Sat")
+        else:
+            print("Unsat")
 
     print("Time: {0}".format(round(time.time() - start_time, 2)))
 
