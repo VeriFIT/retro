@@ -45,16 +45,18 @@ class PresFormula:
         elif self.type == PresFormulaType.CONJ:
             aut1 = self.formulas[0].translate_to_nfa()
             aut2 = self.formulas[1].translate_to_nfa()
+            vars = aut1.vars
             if aut1.vars != aut2.vars:
-                vars = aut1.vars + aut2.vars
+                vars = aut1.vars | aut2.vars
                 aut1 = PresFormula.expand_aut_vars(aut1, vars)
                 aut2 = PresFormula.expand_aut_vars(aut2, vars)
             return PresNFA(vars, aut1.nfa.conjunction(aut2.nfa))
         elif self.type == PresFormulaType.DISJ:
             aut1 = self.formulas[0].translate_to_nfa()
             aut2 = self.formulas[1].translate_to_nfa()
+            vars = aut1.vars
             if aut1.vars != aut2.vars:
-                vars = aut1.vars + aut2.vars
+                vars = aut1.vars | aut2.vars
                 aut1 = PresFormula.expand_aut_vars(aut1, vars)
                 aut2 = PresFormula.expand_aut_vars(aut2, vars)
             return PresNFA(vars, aut1.nfa.disjunction(aut2.nfa))

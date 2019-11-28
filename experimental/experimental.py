@@ -17,6 +17,7 @@ import resource
 
 SATLINE = -2
 TIMELINE = -1
+MODEL_CHECK = -3
 TIMEOUT = 10 #in seconds
 FORMULAS = 1000
 
@@ -46,7 +47,7 @@ def main():
 
     files = [f for f in os.listdir(formulafolder) \
         if os.path.isfile(os.path.join(formulafolder, f)) and \
-            f.endswith(".txt")]
+            f.endswith(".smt2")]
     files.sort()
     files = files[:FORMULAS]
     tex = "Timeout: {0}\n".format(TIMEOUT)
@@ -60,11 +61,11 @@ def main():
         filename = os.path.join(formulafolder, eq_file)
 
         try:
-            output = subprocess.check_output([bin, filename, "../automata/rrt-x-yx.vtf", "../automata/rrt-x-eps.vtf"], \
+            output = subprocess.check_output([bin, filename, "../automata/rrt-x-yx-len.vtf", "../automata/rrt-x-eps-len.vtf", "../automata/rrt-x-yx.vtf", "../automata/rrt-x-eps.vtf"], \
                 timeout=TIMEOUT).decode("utf-8")
             rmc_parse = parse_output(output)
         except subprocess.TimeoutExpired:
-            rmc_parse = None, None
+            rmc_parse = None, None, None
 
         filename = os.path.basename(filename)
         print_output(filename, rmc_parse)
@@ -80,9 +81,13 @@ def parse_output(output):
     lines = output.split('\n')
     lines = list(filter(None, lines)) #Remove empty lines
     sat = lines[SATLINE]
+    model_check = str()
+    if sat == "Sat":
+        match = re.search("Model check: ([a-zA-Z]+)", lines[MODEL_CHECK])
+        model_check = match.group(1)
     match = re.search("Time: ([0-9]+.[0-9]+)", lines[TIMELINE])
     time = round(float(match.group(1)), 2)
-    return sat, time
+    return sat, time, model_check
 
 
 def print_config(formulas):
@@ -95,8 +100,8 @@ def format_output(parse):
 
 
 def print_output(filename, rmc_parse):
-    print("{0}: {1}\t {2}".format(filename, format_output(rmc_parse[0]), \
-        format_output(rmc_parse[1])))
+    print("{0}: {1}\t {2}\t {3}".format(filename, format_output(rmc_parse[0]), \
+        format_output(rmc_parse[1]), format_output(rmc_parse[2])))
 
 
 def help_err():

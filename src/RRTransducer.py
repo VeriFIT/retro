@@ -377,8 +377,6 @@ class RRTransducer:
             if (s1 in self._fin) and (index == len(word)):
                 return words[(s1, index)]
 
-            if len(word) != 0 and index == len(word):
-                continue
             if s1 not in self._trans:
                 continue
             for tr in self._trans[s1]:
@@ -388,7 +386,7 @@ class RRTransducer:
                     ind = index
                 elif len(word) == 0:
                     continue
-                elif symbol != word[index]:
+                elif index == len(word) or symbol != word[index]:
                     continue
                 else:
                     ind = index + 1
@@ -417,7 +415,7 @@ class RRTransducer:
                 states.add(tr.src)
                 states.add(tr.dest)
                 ret.addTransition(tr.src, self._symbol_from_tape(dict(tr.tape_update)), tr.dest)
-        for st in states:
+        for st in sorted(states):
             ret.addState(st)
         for fin in fins:
             ret.addFinal(fin)

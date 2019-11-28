@@ -110,7 +110,7 @@ def rmc_loop_nfa(nfa_eq, rrts):
             word = []
             word = trans_history[-1][1].prod_out_str(word)
             lengths = len_constr_word(word)
-            model = get_model(word, lengths, trans_history)
+            model = get_model(word, lengths, trans_history[0:-1])
             return True, model
 
         all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
@@ -244,8 +244,8 @@ if __name__ == '__main__':
     if ret:
         ren_model = rename_model(model, var_dict_rev)
         print(ren_model)
-        print("Sat")
         print("Model check: {0}".format(check_model(model, raw_eq)))
+        print("Sat")
     else:
         print("Unsat")
 
