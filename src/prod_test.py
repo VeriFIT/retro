@@ -194,6 +194,17 @@ def get_model(word, lengths, rrts):
     return model
 
 
+def rmc_solve(nfa_eq, rrts, var_dict_rev, raw_eq):
+    ret, model = rmc_loop_nfa(nfa_eq, rrts)
+    if ret:
+        ren_model = rename_model(model, var_dict_rev)
+        print(ren_model)
+        print("Model check: {0}".format(check_model(model, raw_eq)))
+        print("Sat")
+    else:
+        print("Unsat")
+
+
 def _tmp_nfa():
     m = NFA()
     #m.setSigma({("X","a"), ("b","X"), ("c","c")})
@@ -244,24 +255,10 @@ if __name__ == '__main__':
             print("Unsat")
         else:
             rrts = rrts_all[0:2]
-            ret, model = rmc_loop_nfa(nfa_eq, rrts)
-            if ret:
-                ren_model = rename_model(model, var_dict_rev)
-                print(ren_model)
-                print("Model check: {0}".format(check_model(model, raw_eq)))
-                print("Sat")
-            else:
-                print("Unsat")
+            rmc_solve(nfa_eq, rrts, var_dict_rev, raw_eq)
     else:
         rrts = rrts_all[2:4]
-        ret, model = rmc_loop_nfa(nfa_eq, rrts)
-        if ret:
-            ren_model = rename_model(model, var_dict_rev)
-            print(ren_model)
-            print("Model check: {0}".format(check_model(model, raw_eq)))
-            print("Sat")
-        else:
-            print("Unsat")
+        rmc_solve(nfa_eq, rrts, var_dict_rev, raw_eq)
 
     print("Time: {0}".format(round(time.time() - start_time, 2)))
 
