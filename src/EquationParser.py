@@ -67,6 +67,27 @@ def parse_single_equation(line):
 
 
 ############################################################################
+def parse_raw_equations(fd):
+    ret = list()
+    nfa = None
+    content = fd.readlines()
+
+    for line in content:
+        symbols = split_symbols(line)
+        ll, rr = divide_list(symbols, "=")
+        left = list(map(_parse_liter, ll))
+        right = list(map(_parse_liter, rr))
+        ret.append((left,right))
+    return ret
+
+
+def _parse_liter(atom):
+    if atom.startswith("\""):
+        return ast.literal_eval(atom)
+    return atom
+
+
+############################################################################
 def parse_symbol(sym):
     if sym.startswith("V"):
         return [Symbol(True, int(sym[1:]))]

@@ -101,3 +101,46 @@ class SmtFormula:
         else:
             for fl in self.formulas:
                 fl.map_variables(mp)
+
+
+    def to_smt_str(self):
+        val = str()
+        for fl in self.formulas:
+            val += fl.to_smt_str() + " "
+        if self.type == EqFormulaType.ASSERT:
+            return "(assert {0})".format(val)
+        if self.type == EqFormulaType.EQ:
+            return "(= {0})".format(val)
+        if self.type == EqFormulaType.CONCAT:
+            return "(str.++ {0})".format(val)
+        if self.type == EqFormulaType.LITER:
+            return "\"{0}\"".format(self.value)
+        if self.type == EqFormulaType.VAR:
+            return str(self.value)
+        raise Exception("Unimplemented {0}".format(self))
+
+
+    @staticmethod
+    def native_to_smt_atom(atom):
+        if atom.startswith("V"):
+            return SmtFormula(EqFormulaType.VAR, [], atom)
+        else:
+            return SmtFormula(EqFormulaType.LITER, [], atom)
+
+
+    @staticmethod
+    def native_to_smt_side(side):
+        assert len(side) > 0
+        if len(side) == 1:
+            return SmtFormula.native_to_smt_atom(side[0])
+
+        ret = SmtFormula.native_to_smt_side(side[0:-1])
+        at = SmtFormula.native_to_smt_atom(side[-1])
+        return SmtFormula(EqFormulaType.CONCAT, [ret, at])
+
+
+    @staticmethod
+    def from_native_to_smt(left, right):
+        l_smt = SmtFormula.native_to_smt_side(left)
+        r_smt = SmtFormula.native_to_smt_side(right)
+        return SmtFormula(EqFormulaType.ASSERT, [SmtFormula(EqFormulaType.EQ, [l_smt, r_smt])])
