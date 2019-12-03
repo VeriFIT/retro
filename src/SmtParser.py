@@ -36,9 +36,9 @@ def parse_atom_token(line):
         atom += line[i]
         if not in_str and line[i] == "\"":
             in_str = True
-        if in_str and line[i] == "\"":
+        elif in_str and line[i] == "\"":
             in_str = False
-        if line[i].isspace():
+        if (not in_str) and (line[i].isspace()):
             return atom.strip(), line[i:]
         else:
             i += 1

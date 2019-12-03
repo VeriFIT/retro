@@ -139,9 +139,7 @@ def print_output(filename, parse):
 def parse_output_z3(output):
     lines = output.split('\n')
     lines = list(filter(None, lines)) #Remove empty lines
-    sat = False
-    if lines[0] == "sat":
-        sat = True
+    sat = lines[0]
     time = None
     for line in lines:
         match = re.search(r':total-time[\s]+([0-9]+.[0-9]+)', line)
@@ -154,9 +152,7 @@ def parse_output_z3(output):
 def parse_output_cvc4(output):
     lines = output.split('\n')
     lines = list(filter(None, lines)) #Remove empty lines
-    sat = False
-    if lines[0] == "sat":
-        sat = True
+    sat = lines[0]
     time = None
     for line in lines:
         match = re.search(r'driver::totalTime, ([0-9]+.[0-9]+)', line)

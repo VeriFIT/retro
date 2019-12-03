@@ -83,7 +83,7 @@ def parse_raw_equations(fd):
 
 def _parse_liter(atom):
     if atom.startswith("\""):
-        return ast.literal_eval(atom)
+        return atom[1:-1]
     return atom
 
 

@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     print("(set-logic QF_S)")
     for var in vars:
-        print("(declare-fun {0}() String )".format(var))
+        print("(declare-fun {0} () String )".format(var))
     for smt_str in eqs_smt:
         print(smt_str.replace('\n', '\\n'))
 
