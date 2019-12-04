@@ -50,9 +50,9 @@ class SmtWrapper:
 
 
     @staticmethod
-    def get_side_atoms(smt_side):
+    def _get_side_atoms(smt_side):
         if smt_side.type == EqFormulaType.CONCAT:
-            return SmtWrapper.get_side_atoms(smt_side.formulas[0]) + SmtWrapper.get_side_atoms(smt_side.formulas[1])
+            return SmtWrapper._get_side_atoms(smt_side.formulas[0]) + SmtWrapper._get_side_atoms(smt_side.formulas[1])
         elif smt_side.type == EqFormulaType.LITER:
             return [smt_side]
         elif smt_side.type == EqFormulaType.VAR:
@@ -65,22 +65,22 @@ class SmtWrapper:
         for formula in self.formulas:
             if formula.is_str_equation():
                 sides = formula.get_eq_sides()
-                ret.append((SmtWrapper.get_side_atoms(sides[0]), SmtWrapper.get_side_atoms(sides[1])))
+                ret.append((SmtWrapper._get_side_atoms(sides[0]), SmtWrapper._get_side_atoms(sides[1])))
         return ret
 
 
     @staticmethod
-    def replace_pairs_all(eqs, max_num):
+    def _replace_pairs_all(eqs, max_num):
         eqs_prev = None
         while eqs_prev != eqs:
             eqs_prev = eqs
-            eqs = SmtWrapper.replace_pair(eqs, max_num)
+            eqs = SmtWrapper._replace_pair(eqs, max_num)
             max_num += 1
         return eqs
 
 
     @staticmethod
-    def create_new_var(num):
+    def _create_new_var(num):
         return SmtFormula(EqFormulaType.VAR, [], "_tmp_{0}".format(num))
 
 
@@ -99,7 +99,7 @@ class SmtWrapper:
 
 
     @staticmethod
-    def replace_pair(eqs, max_num):
+    def _replace_pair(eqs, max_num):
         occur_dct = dict()
         vars = SmtWrapper._get_var_from_eqs(eqs)
         for var in vars:
@@ -108,47 +108,47 @@ class SmtWrapper:
             for var2 in vars:
                 a = count_sublist_eqs([var1, var2], eqs)
                 if (a == occur_dct[var1.value]) and (a == occur_dct[var2.value]):
-                    return replace_sublist_eqs([var1, var2], [SmtWrapper.create_new_var(max_num)], eqs)
+                    return replace_sublist_eqs([var1, var2], [SmtWrapper._create_new_var(max_num)], eqs)
         return eqs
 
 
     @staticmethod
-    def replace_side_one(side, eqs, max_num):
+    def _replace_side_one(side, eqs, max_num):
         if len(side) < 3:
             return None
         a = count_sublist_eqs(side, eqs)
         if a > 1:
-            ret = replace_sublist_eqs(side, [SmtWrapper.create_new_var(max_num)], eqs)
-            ret.append(([SmtWrapper.create_new_var(max_num)], side))
+            ret = replace_sublist_eqs(side, [SmtWrapper._create_new_var(max_num)], eqs)
+            ret.append(([SmtWrapper._create_new_var(max_num)], side))
             return ret
         return None
 
 
     @staticmethod
-    def replace_side(eqs, max_num):
+    def _replace_side(eqs, max_num):
         ret = eqs
         for eq in eqs:
-            ret = SmtWrapper.replace_side_one(eq[0], eqs, max_num)
+            ret = SmtWrapper._replace_side_one(eq[0], eqs, max_num)
             if ret is not None:
                 return ret
-            ret = SmtWrapper.replace_side_one(eq[1], eqs, max_num)
+            ret = SmtWrapper._replace_side_one(eq[1], eqs, max_num)
             if ret is not None:
                 return ret
         return eqs
 
 
     @staticmethod
-    def replace_side_all(eqs, max_num):
+    def _replace_side_all(eqs, max_num):
         eqs_prev = None
         while eqs_prev != eqs:
             eqs_prev = eqs
-            eqs = SmtWrapper.replace_side(eqs, max_num)
+            eqs = SmtWrapper._replace_side(eqs, max_num)
             max_num += 1
         return eqs
 
 
     @staticmethod
-    def remove_simple_eqs(eqs):
+    def _remove_simple_eqs(eqs):
         ret = eqs
         for eq in eqs:
             if (len(eq[0]) == 1) and (len(eq[1]) == 1):
@@ -163,19 +163,17 @@ class SmtWrapper:
         vars = self.get_variables()
         vars_n = len(vars) + 1
         eqs = self.get_eqs_atoms()
-        print(eqs)
-        eqs = SmtWrapper.replace_side_all(eqs, vars_n)
+        eqs = SmtWrapper._replace_side_all(eqs, vars_n)
         max_n = vars_n + len(eqs)
-        eqs = SmtWrapper.replace_pairs_all(eqs, max_n)
-        eqs = SmtWrapper.remove_simple_eqs(eqs)
+        eqs = SmtWrapper._replace_pairs_all(eqs, max_n)
+        eqs = SmtWrapper._remove_simple_eqs(eqs)
 
         vars = SmtWrapper._get_var_from_eqs(eqs)
-        print(vars)
         eqs = list(map(lambda x: SmtWrapper._atoms_smt_eq(x[0], x[1]), eqs))
-        decls = list(map(lambda x: SmtFormula(EqFormulaType.DECL, [x]), vars))
+        decls = list(map(lambda x: SmtFormula(EqFormulaType.DECL, [x, None, SmtFormula(EqFormulaType.VAR, [], "String")]), vars))
 
         self.replace_str_eqs(eqs)
-        #self.replace_var_decls(decls)
+        self.replace_var_decls(decls)
 
 
     def replace_var_decls(self, new_decls):
@@ -184,7 +182,7 @@ class SmtWrapper:
         for fl in self.formulas:
             if not fl.is_var_decl():
                 ret.append(fl)
-        self.formulas = [ret[0]] + new_decls + [ret[1:]]
+        self.formulas = [ret[0]] + new_decls + ret[1:]
 
 
     def replace_str_eqs(self, new_eqs):
