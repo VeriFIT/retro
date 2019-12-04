@@ -21,6 +21,10 @@ def get_eq_items(smt_formula):
     var_dict = dict(map(lambda x: (x[0], Symbol(1, x[1])), var_dict))
     is_len = False
 
+
+    wrap.syntax_reduce()
+    print(wrap.formulas)
+
     wrap.len_constr_rename_var(var_dict)
     pres_for = wrap.get_conj_pres_formula()
 
@@ -227,6 +231,138 @@ def _tmp_nfa():
     return m
 
 
+def lst_starts_with(lst1, lst2):
+    if len(lst1) > len(lst2):
+        return False
+
+    for i in range(len(lst1)):
+        if lst1[i] != lst2[i]:
+            return False
+    return True
+
+
+def count_sublist(lst1, lst2):
+    n = len(lst1)
+    cnt = 0
+    ln = lst2
+    for i in range(len(lst2)):
+        if lst_starts_with(lst1, ln):
+            cnt += 1
+        ln = ln[1:]
+    return cnt
+
+
+def count_sublist_eqs(lst, eqs):
+    cnt = 0
+    for eq in eqs:
+        cnt += count_sublist(lst, eq[0])
+        cnt += count_sublist(lst, eq[1])
+    return cnt
+
+
+def get_vars_lst(lst):
+    ret = set()
+    for item in lst:
+        if item.is_var():
+            ret.add(item)
+    return ret
+
+
+def get_vars_eqs(eqs):
+    vars = set()
+    for eq in eqs:
+        vars = vars | get_vars_lst(eq[0])
+        vars = vars | get_vars_lst(eq[1])
+    return vars
+
+
+def replace_sublist(find, replace, lst):
+    ret = list()
+    n = len(find)
+    i = 0
+    while len(lst) > 0:
+        if lst_starts_with(find, lst):
+            lst = lst[n:]
+            ret = ret + replace
+        else:
+            ret.append(lst[0])
+            lst = lst[1:]
+    return ret
+
+def replace_sublist_eqs(find, replace, eqs):
+    ret = list()
+    for eq in eqs:
+        ret.append((replace_sublist(find, replace, eq[0]), replace_sublist(find, replace, eq[1])))
+    return ret
+
+
+def replace_pairs_all(eqs):
+    eqs_prev = None
+    while eqs_prev != eqs:
+        eqs_prev = eqs
+        eqs = replace_pair(eqs)
+    return eqs
+
+
+def replace_pair(eqs):
+    vars = get_vars_eqs(eqs)
+    max_num = max(map(lambda x: x.val, vars))
+    occur_dct = dict()
+    for var in vars:
+        occur_dct[var] = count_sublist_eqs([var], eqs)
+    for var1 in vars:
+        for var2 in vars:
+            a = count_sublist_eqs([var1, var2], eqs)
+            if (a == occur_dct[var1]) and (a == occur_dct[var2]):
+                return replace_sublist_eqs([var1, var2], [Symbol(1, max_num+1)], eqs)
+    return eqs
+
+
+def replace_side_one(side, eqs, max_num):
+    if len(side) < 3:
+        return None
+    a = count_sublist_eqs(side, eqs)
+    if a > 1:
+        ret = replace_sublist_eqs(side, [Symbol(1, max_num)], eqs)
+        ret.append(([Symbol(1, max_num)], side))
+        return ret
+    return None
+
+
+def replace_side(eqs):
+    vars = get_vars_eqs(eqs)
+    max_num = max(map(lambda x: x.val, vars)) + 1
+    ret = eqs
+
+    for eq in eqs:
+        ret = replace_side_one(eq[0], eqs, max_num)
+        if ret is not None:
+            return ret
+        ret = replace_side_one(eq[1], eqs, max_num)
+        if ret is not None:
+            return ret
+    return eqs
+
+
+def replace_side_all(eqs):
+    eqs_prev = None
+    while eqs_prev != eqs:
+        eqs_prev = eqs
+        eqs = replace_side(eqs)
+    return eqs
+
+
+def remove_simple_eqs(eqs):
+    ret = eqs
+    for eq in eqs:
+        if (len(eq[0]) == 1) and (len(eq[1]) == 1):
+            if count_sublist_eqs(eq[0], eqs) == 1:
+                ret.remove(eq)
+            elif count_sublist_eqs(eq[1], eqs) == 1:
+                ret.remove(eq)
+    return ret
+
+
 ###########################################
 if __name__ == '__main__':
     argc = len(sys.argv)
@@ -244,6 +380,17 @@ if __name__ == '__main__':
     nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for)
     var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
     ret = None
+
+    # print(raw_eq, get_vars_eqs(raw_eq))
+    # repl_all = replace_side_all(raw_eq)
+    # print(repl_all)
+    # repl_pairs = replace_pairs_all(repl_all)
+    # print(remove_simple_eqs(repl_pairs))
+    #
+    # for fd in fd_aut:
+    #     fd.close()
+    # fd_eq.close()
+    # exit(0)
 
     trs = list(map (parse_rrt, fd_aut))
     rrts_all = list(map (autdict2RRTransducer, trs))

@@ -41,6 +41,10 @@ class SmtFormula:
         return self.__str__()
 
 
+    def __eq__(self, other):
+        return (self.type == other.type) and (self.value == other.value) and (self.formulas == other.formulas)
+
+
     def get_decl_name(self):
         if self.type != EqFormulaType.DECL:
             return None
@@ -101,6 +105,13 @@ class SmtFormula:
         else:
             for fl in self.formulas:
                 fl.map_variables(mp)
+
+
+    def get_eq_sides(self):
+        if self.type == EqFormulaType.ASSERT:
+            if self.formulas[0].type == EqFormulaType.EQ:
+                return self.formulas[0].formulas
+        return None
 
 
     def to_smt_str(self):
