@@ -151,7 +151,8 @@ class SmtWrapper:
     def _remove_simple_eqs(eqs):
         ret = eqs
         for eq in eqs:
-            if (len(eq[0]) == 1) and (len(eq[1]) == 1):
+            if (len(eq[0]) == 1) and (len(eq[1]) == 1) and \
+                (eq[0][0].type == EqFormulaType.VAR) and (eq[1][0].type == EqFormulaType.VAR):
                 if count_sublist_eqs(eq[0], eqs) == 1:
                     ret.remove(eq)
                 elif count_sublist_eqs(eq[1], eqs) == 1:

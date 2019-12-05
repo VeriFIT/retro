@@ -134,10 +134,10 @@ new_eq ("(not (= x1 in1))" "(not (= x1 in2))") \
      () \
      new_eq
 
-new_eq ("(= in1 in2)" "(not (delim in1))") \
-     ("out1 <- eps" "out2 <- eps") \
-     () \
-     new_eq
+%new_eq ("(= in1 in2)" "(not (delim in1))") \
+%     ("out1 <- eps" "out2 <- eps") \
+%     () \
+%     new_eq
 
 new_eq ("(= x1 in1)" "(not (= in1 in2))") \
      ("out1 <- x2" "out2 <- in2") \
