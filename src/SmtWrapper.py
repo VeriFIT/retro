@@ -42,11 +42,28 @@ class SmtWrapper:
 
 
     def get_variables(self):
-        ret = list()
+        ret = set()
         for fl in self.formulas:
-            if fl.is_var_decl():
-                ret.append(fl.formulas[0].value)
+            if fl is not None:
+                ret = ret | set(fl.get_variables())
         return ret
+
+
+    def split_to_chunks(self):
+        chunks = list()
+        processed = list()
+        fls = copy(self.formulas)
+        for fl in self.formulas:
+            if fl.is_str_equation():
+                eq = fl.formulas[0]
+                left, right = SmtWrapper._get_str_equation(eq)
+                if left in chunks:
+                    i = chunks.index(left)
+                    processed[i].append(fl)
+                else:
+                    chunks.append(left)
+                    processed.append([fl])
+        return processed
 
 
     @staticmethod
@@ -171,10 +188,10 @@ class SmtWrapper:
 
         vars = SmtWrapper._get_var_from_eqs(eqs)
         eqs = list(map(lambda x: SmtWrapper._atoms_smt_eq(x[0], x[1]), eqs))
-        decls = list(map(lambda x: SmtFormula(EqFormulaType.DECL, [x, None, SmtFormula(EqFormulaType.VAR, [], "String")]), vars))
+        #decls = list(map(lambda x: SmtFormula(EqFormulaType.DECL, [x, None, SmtFormula(EqFormulaType.VAR, [], "String")]), vars))
 
         self.replace_str_eqs(eqs)
-        self.replace_var_decls(decls)
+        #self.replace_var_decls(decls)
 
 
     def replace_var_decls(self, new_decls):
@@ -192,7 +209,10 @@ class SmtWrapper:
         for fl in self.formulas:
             if not fl.is_str_equation():
                 ret.append(fl)
-        self.formulas = ret[0:-1] + new_eqs + [ret[-1]]
+        if len(ret) > 0:
+            self.formulas = ret[0:-1] + new_eqs + [ret[-1]]
+        else:
+            self.formulas = new_eqs
 
 
     @staticmethod
@@ -232,12 +252,18 @@ class SmtWrapper:
         ret = list()
         for fl in self.formulas:
             if fl.is_str_equation():
-                eq_smt = fl.formulas[0]
-                assert eq_smt.type == EqFormulaType.EQ
-                left = SmtWrapper.get_str_equation_symbols(eq_smt.formulas[0], var_dict)
-                right = SmtWrapper.get_str_equation_symbols(eq_smt.formulas[1], var_dict)
+                left, right = SmtWrapper._get_str_equation(fl.formulas[0], var_dict)
                 ret.append((left, right))
         return ret
+
+
+    @staticmethod
+    def _get_str_equation(smt_formula, var_dict=None):
+        eq_smt = smt_formula
+        assert eq_smt.type == EqFormulaType.EQ
+        left = SmtWrapper.get_str_equation_symbols(eq_smt.formulas[0], var_dict)
+        right = SmtWrapper.get_str_equation_symbols(eq_smt.formulas[1], var_dict)
+        return left, right
 
 
     def get_str_eq_automata(self, eqs, len_constr=None):
@@ -364,12 +390,14 @@ class SmtWrapper:
 
 
     @staticmethod
-    def get_str_equation_symbols(smt_formula, var_dict):
+    def get_str_equation_symbols(smt_formula, var_dict=None):
         if smt_formula.type == EqFormulaType.CONCAT:
             assert len(smt_formula.formulas) == 2
             return SmtWrapper.get_str_equation_symbols(smt_formula.formulas[0], var_dict) + \
                 SmtWrapper.get_str_equation_symbols(smt_formula.formulas[1], var_dict)
         if smt_formula.type == EqFormulaType.VAR:
+            if var_dict is None:
+                return [smt_formula.value]
             return [var_dict[smt_formula.value]]
         if smt_formula.type == EqFormulaType.LITER:
             str = ast.literal_eval("\"{0}\"".format(smt_formula.value))

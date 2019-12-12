@@ -29,6 +29,7 @@ def get_eq_items(smt_formula):
     if pres_for is not None:
         len_constr = pres_for.translate_to_nfa_vars(var_dict.values())
         len_constr_nfa = len_constr.nfa
+        len_constr_nfa = len_constr_nfa.minimal()
         is_len = True
 
     eqs = wrap.get_str_equations_symbol(var_dict)
@@ -38,6 +39,59 @@ def get_eq_items(smt_formula):
     nfa_eq = nfa_eq.minimal().toNFA()
     nfa_eq.renameStates()
     return nfa_eq, var_dict, is_len, raw_eq, str_nfa_eq
+
+
+def iterative_solution(smt_lst, rrts):
+    wrap = SmtWrapper(smt_lst)
+    wrap.syntax_reduce()
+
+    smt_lst = wrap.formulas
+    smt_list_prime = smt_lst
+
+    for chunk in wrap.split_to_chunks():
+        ret, model = solve_smt(chunk, rrts)
+        if not ret:
+            raise Exception("Unsat part")
+        model = substitute_model(model)
+        for fl in smt_list_prime:
+            fl.substitute_vars(model)
+    print("Sat")
+
+
+def substitute_model(model):
+    ret = dict()
+    for key, val in model.items():
+        item_str = str()
+        for s in val:
+            item_str += chr(s.val)
+        item_str = item_str.replace('\n', '\\n')
+        item_str = item_str.replace('\r', '\\r')
+        ret[key] = item_str
+    return ret
+
+
+def solve_smt(eqs_lst, rrts):
+    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(eqs_lst)
+    var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
+    if is_len:
+        rrts = rrts_all[2:4]
+        ret, _ = rmc_loop_nfa(str_eq, rrts)
+        if not ret:
+            return ret, None
+        else:
+            rrts = rrts_all[0:2]
+            ret, model = rmc_loop_nfa(nfa_eq, rrts)
+            if ret:
+                ren_model = rename_model(model, var_dict_rev)
+                return ret, ren_model
+            return ret, None
+    else:
+        rrts = rrts_all[2:4]
+        ret, model = rmc_loop_nfa(nfa_eq, rrts)
+        if ret:
+            ren_model = rename_model(model, var_dict_rev)
+            return ret, ren_model
+        return ret, None
 
 
 def len_constr_word(word):
@@ -242,23 +296,16 @@ if __name__ == '__main__':
     start_time = time.time()
 
     smt_for = parse_smt_file(fd_eq)
+    #mt_for = list(filter(lambda x: x.is_str_equation(), smt_for))
+
     nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for)
     var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
     ret = None
 
-    # print(raw_eq, get_vars_eqs(raw_eq))
-    # repl_all = replace_side_all(raw_eq)
-    # print(repl_all)
-    # repl_pairs = replace_pairs_all(repl_all)
-    # print(remove_simple_eqs(repl_pairs))
-    #
-    # for fd in fd_aut:
-    #     fd.close()
-    # fd_eq.close()
-    # exit(0)
-
     trs = list(map (parse_rrt, fd_aut))
     rrts_all = list(map (autdict2RRTransducer, trs))
+
+    #iterative_solution(smt_for, rrts_all)
 
     if is_len:
         rrts = rrts_all[2:4]

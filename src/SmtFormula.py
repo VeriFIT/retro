@@ -95,7 +95,8 @@ class SmtFormula:
             return [self.value]
         ret = list()
         for fl in self.formulas:
-            ret = ret + fl.get_variables()
+            if fl is not None:
+                ret = ret + fl.get_variables()
         return ret
 
 
@@ -131,6 +132,20 @@ class SmtFormula:
         raise Exception("Unimplemented {0}".format(self))
 
 
+    def substitute_vars(self, var_dict):
+        if self.type == EqFormulaType.VAR:
+            try:
+                val = var_dict[self.value]
+                self.value = val
+                self.type = EqFormulaType.LITER
+                self.formulas = []
+            except KeyError:
+                return
+        else:
+            for fl in self.formulas:
+                fl.substitute_vars(var_dict)
+
+
     @staticmethod
     def native_to_smt_atom(atom):
         if atom.startswith("V"):
@@ -141,7 +156,8 @@ class SmtFormula:
 
     @staticmethod
     def native_to_smt_side(side):
-        assert len(side) > 0
+        if len(side) == 0:
+            raise Exception("Empty side {0}".format(side))
         if len(side) == 1:
             return SmtFormula.native_to_smt_atom(side[0])
 
