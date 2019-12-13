@@ -7,6 +7,7 @@ from itertools import chain
 from collections import defaultdict
 from Symbol import *
 from AuxFunc import *
+from Graph import *
 
 conv_map = {EqFormulaType.LEQ: PresFormulaType.LEQ, \
     EqFormulaType.LE: PresFormulaType.LE, EqFormulaType.EQ: PresFormulaType.EQ}
@@ -49,21 +50,89 @@ class SmtWrapper:
         return ret
 
 
+    @staticmethod
+    def _create_dep_graph(chunks, raw_eqs):
+        edges = list()
+        n = len(chunks)
+        for i in range(n):
+            for sym in chunks[i]:
+                for j in range(n):
+                    if i == j:
+                        continue
+                    for left, right in raw_eqs[j]:
+                        if sym in left or sym in right:
+                            edges.append((i, j))
+                            break
+        return edges
+
+
+    @staticmethod
+    def _get_chunk_repr(left, right):
+        side = None
+        if any(isinstance(x, Symbol) for x in left):
+            if any(isinstance(x, Symbol) for x in right):
+                side = left
+            else:
+                side = right
+        else:
+            side = left
+        return side
+
+
     def split_to_chunks(self):
         chunks = list()
         processed = list()
+        processed_raw = list()
         fls = copy(self.formulas)
         for fl in self.formulas:
             if fl.is_str_equation():
                 eq = fl.formulas[0]
                 left, right = SmtWrapper._get_str_equation(eq)
-                if left in chunks:
-                    i = chunks.index(left)
+                side = SmtWrapper._get_chunk_repr(left, right)
+
+                if side in chunks:
+                    i = chunks.index(side)
                     processed[i].append(fl)
+                    processed_raw[i].append((left, right))
                 else:
-                    chunks.append(left)
+                    chunks.append(side)
                     processed.append([fl])
-        return processed
+                    processed_raw.append([(left, right)])
+
+        verts = list(range(len(chunks)))
+        edges = SmtWrapper._create_dep_graph(chunks, processed_raw)
+        graph = Graph(list(range(len(chunks))), edges)
+
+        index_sort = graph.sort_dep_graph()
+        processed_sort = list()
+        for i in index_sort:
+            processed_sort.append(processed[i])
+
+        return processed_sort
+
+
+    @staticmethod
+    def _contain_chunk(chunk, raw):
+        for symbol in chunk:
+            for left, right in raw:
+                if chunk != left and symbol in left:
+                    return True
+                if chunk != right and symbol in right:
+                    return True
+        return False
+
+
+    @staticmethod
+    def _chunk_index(side, chunks):
+        index = 0
+        for chunk in chunks:
+            for symbol in side:
+                if symbol in chunk:
+                    return index
+            index += 1
+        return None
+
+
 
 
     @staticmethod
