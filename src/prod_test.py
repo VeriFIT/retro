@@ -16,7 +16,7 @@ from FAdo.fa import *
 
 def get_eq_items(smt_formula):
     wrap = SmtWrapper(smt_formula)
-    #wrap.syntax_reduce()
+    wrap.syntax_reduce()
     vars = wrap.get_variables()
     var_dict = list(zip(vars, range(len(vars))))
     var_dict = dict(map(lambda x: (x[0], Symbol(1, x[1])), var_dict))
