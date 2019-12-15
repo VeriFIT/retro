@@ -1,0 +1,99 @@
+---
+title: "Retro Result Analysis"
+params:
+  dir: kaluza-hard
+output:
+  html_notebook:
+    code_folding: hide
+  pdf_document: default
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+---
+
+```{r echo=FALSE}
+#=========================================================
+# PREAMBLE
+#=========================================================
+
+# load the plotting library
+suppressMessages(library(ggplot2))
+library(grid)
+library(gridExtra)
+library(tikzDevice)
+
+theme_set(theme_bw())
+
+options(scipen=999)  # turn-off scientific notation like 1e+48
+
+# size of point for scatterplots
+POINT_SIZE = 0.1
+
+# timeout
+TIMEOUT = 10
+TIMEOUT_VAL = 1.05 * TIMEOUT
+
+# FUNCTIONS
+read_file <- function(approach) {
+  filename = paste0("./", params$dir, "/", approach, "-", params$dir, ".csv")
+  df <- read.csv2(filename,
+                  header=TRUE,
+                  sep=";",
+                  comment.char="#",
+                  strip.white=TRUE)
+
+  # basic preprocessing
+  df <- df[c("Formula", "sat", "time")]
+
+  # deal with timeouts and time type
+  df[df == "TO"] <- NA
+  df$time <- as.double(as.character(df$time))
+  df$time[is.na(df$time)] <- TIMEOUT_VAL
+ 
+  # rename the time column 
+  timecol_name = paste0("time.", approach)
+  names(df)[names(df) == "time"] <- timecol_name
+  
+  return(df)
+}
+
+merge_dfs <- function(ls) {
+  df <- ls[[1]]
+  for(i in 2:length(ls)) {
+    # TODO: check consistency of results
+    df_ls <- ls[[i]]
+    
+    orig_sat <- df[["sat"]]
+    new_sat <- df_ls[["sat"]]
+    
+    timecol_name <- grep("time.", names(df_ls), value = TRUE)
+    df_aux <- df_ls[, c("Formula", timecol_name)]
+    
+    df <- merge(df, df_aux, by = "Formula")
+  }
+  return(df)
+}
+```
+
+```{r echo=FALSE}
+df_rmc <- read_file("rmc")
+df_cvc4 <- read_file("cvc4")
+
+df <- merge_dfs(list(df_rmc, df_cvc4))
+
+```
+
+These are results of the experiments for Retro:
+
+|                     |                     |
+|---------------------|--------------------:|
+| **Benchmark**       | `r params$dir`      |
+| **Timeout**         | `r TIMEOUT` s       |
+| **Benchmarks**      | `r nrow(df)`        |
+
+```{r echo=FALSE}
+df
+```
+
+
