@@ -56,3 +56,8 @@ def remove_duplicates_lst(lst):
         if item not in ret:
             ret.append(item)
     return ret
+
+
+def swap_list_items(lst, i1, i2):
+    lst[i1], lst[i2] = lst[i2], lst[i1]
+    return lst

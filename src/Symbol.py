@@ -52,7 +52,10 @@ class Symbol:
 
 
     def __hash__(self):
-        return hash((self.val, self.type))
+        if self.type == 0:
+            return (-self.val)
+        else:
+            return (self.val)
 
 
     def __repr__(self):

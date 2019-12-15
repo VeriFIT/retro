@@ -48,13 +48,21 @@ def iterative_solution(smt_lst, rrts):
     smt_lst = wrap.formulas
     smt_list_prime = smt_lst
 
-    for chunk in wrap.split_to_chunks():
-        ret, model = solve_smt(chunk, rrts)
+    chunks = wrap.split_to_chunks()
+    for i in range(len(chunks)):
+        ret, model = solve_smt(chunks[i], rrts)
         if not ret:
-            raise Exception("Unsat part")
+            print("----")
+            print("Model check: Bad")
+            print("---")
+            return
         model = substitute_model(model)
         for fl in smt_list_prime:
             fl.substitute_vars(model)
+
+
+    print("----")
+    print("Model check: True")
     print("Sat")
 
 
@@ -66,6 +74,8 @@ def substitute_model(model):
             item_str += chr(s.val)
         item_str = item_str.replace('\n', '\\n')
         item_str = item_str.replace('\r', '\\r')
+        item_str = item_str.replace('\v', '\\v')
+        item_str = item_str.replace('\f', '\\f')
         ret[key] = item_str
     return ret
 
@@ -296,7 +306,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     smt_for = parse_smt_file(fd_eq)
-    #mt_for = list(filter(lambda x: x.is_str_equation(), smt_for))
+    #smt_for = list(filter(lambda x: x.is_str_equation(), smt_for))
 
     nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for)
     var_dict_rev = dict([(v,k) for k, v in var_dict.items()])

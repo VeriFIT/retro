@@ -44,13 +44,18 @@ def proc_stream(fd):
             break
 
         line = line.strip()
-        if not line:
-            continue
+        # if not line:
+        #     continue
 
         if line == "from:":
             continue
 
-        if line == "[Check SAT]":
+        if line == "":
+            if len(buffer) > 0:
+                dump_eq(buffer, i)
+                buffer = list()
+                i += 1
+        elif line == "[Check SAT]":
             if i != 0:   # not the first
                 dump_eq(buffer, i)
                 buffer = list()
@@ -58,7 +63,8 @@ def proc_stream(fd):
         else:
             buffer.append(line + "\n")
 
-    dump_eq(buffer, i)
+    if len(buffer) > 0:
+        dump_eq(buffer, i)
     return
 
 
