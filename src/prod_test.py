@@ -14,7 +14,7 @@ from SmtWrapper import *
 
 from FAdo.fa import *
 
-def get_eq_items(smt_formula):
+def get_eq_items(smt_formula, incl_len=True):
     wrap = SmtWrapper(smt_formula)
     wrap.syntax_reduce()
     vars = wrap.get_variables()
@@ -23,13 +23,19 @@ def get_eq_items(smt_formula):
     is_len = False
 
     wrap.len_constr_rename_var(var_dict)
-    pres_for = wrap.get_conj_pres_formula()
+    if incl_len:
+        pres_for = wrap.get_conj_pres_formula()
+    else:
+        pres_for = None
 
     len_constr_nfa = None
     if pres_for is not None:
         len_constr = pres_for.translate_to_nfa_vars(var_dict.values())
         len_constr_nfa = len_constr.nfa
-        len_constr_nfa = len_constr_nfa.minimal()
+        #len_constr_nfa = len_constr_nfa.minimal()
+        is_len = True
+
+    if wrap.contains_len_constr():
         is_len = True
 
     eqs = wrap.get_str_equations_symbol(var_dict)
@@ -50,6 +56,7 @@ def iterative_solution(smt_lst, rrts):
 
     chunks = wrap.split_to_chunks()
     for i in range(len(chunks)):
+        print(i)
         ret, model = solve_smt(chunks[i], rrts)
         if not ret:
             print("----")
@@ -150,6 +157,7 @@ def check_model(model, raw_eq):
 
 def rmc_loop_nfa(nfa_eq, rrts):
     all_nfa = copy(nfa_eq)
+    all_nfa = all_nfa.toDFA()
     trans_history = list()
 
     while True:
@@ -164,8 +172,9 @@ def rmc_loop_nfa(nfa_eq, rrts):
             rrt.rename_states()
             trans.append(rrt)
 
-            fado_aut = rrt.get_nfa().trim()
-            fado_aut = fado_aut.minimal().trim().toNFA()
+            fado_aut = rrt.get_nfa()
+            fado_aut.elimEpsilon().eliminateEpsilonTransitions()
+            fado_aut = minimalBrzozowski(fado_aut).trim().toNFA()
             fado_aut.renameStates()
 
             curr_nfa = disjoint_union(curr_nfa, fado_aut)
@@ -179,15 +188,21 @@ def rmc_loop_nfa(nfa_eq, rrts):
             model = get_model(word, lengths, trans_history[0:-1])
             return True, model
 
-        all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
-        comp = all_nfa.__invert__()
-        comp.renameStates()
-        if onthefly_empty_NFA(comp.toNFA(), curr_nfa):
+        # all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
+        # comp = all_nfa.__invert__()
+        # comp.renameStates()
+        # if onthefly_empty_NFA(comp.toNFA(), curr_nfa):
+        #     return False, None
+        # all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
+        # comp = all_nfa.__invert__()
+        # comp.renameStates()
+        all_nfa.renameStates()
+        if onthefly_empty_no_invert_DFA(all_nfa, curr_nfa):
             return False, None
 
-        all_nfa.renameStates()
+        #all_nfa.renameStates()
         all_nfa = disjoint_union(all_nfa.toNFA(), curr_nfa)
-        all_nfa = all_nfa.toDFA()
+        all_nfa = toDFA(all_nfa)
         nfa_eq = copy(curr_nfa)
 
 
@@ -308,7 +323,7 @@ if __name__ == '__main__':
     smt_for = parse_smt_file(fd_eq)
     #smt_for = list(filter(lambda x: x.is_str_equation(), smt_for))
 
-    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for)
+    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, False)
     var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
     ret = None
 
@@ -316,13 +331,13 @@ if __name__ == '__main__':
     rrts_all = list(map (autdict2RRTransducer, trs))
 
     #iterative_solution(smt_for, rrts_all)
-
     if is_len:
         rrts = rrts_all[2:4]
         ret, _ = rmc_loop_nfa(str_eq, rrts)
         if not ret:
             print("Unsat")
         else:
+            nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, True)
             rrts = rrts_all[0:2]
             rmc_solve(nfa_eq, rrts, var_dict_rev, raw_eq)
     else:

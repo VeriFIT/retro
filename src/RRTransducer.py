@@ -89,12 +89,12 @@ class RRTransducer:
 
     ############################################################################
     @staticmethod
-    def _guard_subs(guard, sub):
+    def _guard_subs(guard, sub, varsk):
         name = guard.name
-        varsk = set(sub.keys())
+        #varsk = set(sub.keys())
         vars = [item for item in guard.vars if item not in varsk]
-        for var, sb in sub.items():
-            name = name.replace(var, str(sb))
+        # for var, sb in sub.items():
+        #     name = name.replace(var, str(sb))
         pred = lambda *x: guard.pred(*RRTransducer._expand_guard_par(x, sub, guard.vars, vars))
         return RRTGuardAct(name, vars, pred)
 
@@ -108,14 +108,29 @@ class RRTransducer:
 
 
     @staticmethod
-    def _single_guard_sat(varsym, guard):
+    def _single_guard_sat(varsym, guard, varsym_keys=None):
         dec = True
-        params_pairs = dict(filter(lambda x: x[0] in guard.vars, varsym.items()))
-        if not set(guard.vars) <= set(varsym.keys()):
-            rem_grds = RRTransducer._guard_subs(guard, params_pairs)
+        if varsym_keys is None:
+            varsym_keys = set(varsym.keys())
+        #params_pairs = {k:v for k, v in varsym.items() if k in guard.vars}
+        params = list()
+        params_pairs = dict()
+        gr_vars = set(guard.vars)
+        param_vars = set()
+
+        for k, v in varsym.items():
+            if k not in gr_vars:
+                continue
+            params_pairs[k] = v
+            params.append(v)
+            param_vars.add(k)
+
+        #params_pairs = dict(filter(lambda x: x[0] in guard.vars, varsym.items()))
+        if not gr_vars <= varsym_keys:
+            rem_grds = RRTransducer._guard_subs(guard, params_pairs, param_vars)
             return None, rem_grds #too hard to decide now
 
-        params = list(params_pairs.values())
+        #params = list(params_pairs.values())
         return guard.pred(*params), None
 
 
@@ -124,9 +139,12 @@ class RRTransducer:
         rem_grds = []
         dec = True
 
+        vars_set = set(varsym.keys())
+
         for gr in guards:
-            dec, grd_add = RRTransducer._single_guard_sat(varsym, gr)
+            dec, grd_add = RRTransducer._single_guard_sat(varsym, gr, vars_set)
             if dec is None:
+                #return True, guards
                 rem_grds.append(grd_add)
                 continue
             if dec == False:
@@ -192,10 +210,17 @@ class RRTransducer:
         while state_stack:
             s1, s2 = state_stack.pop()
 
-            if (s1 not in self._trans) or (s2 not in nfa.delta):
+            tr1_all = None
+            tr2_all = None
+            try:
+                tr1_all = self._trans[s1]
+                tr2_all = nfa.delta[s2].items()
+            except KeyError:
                 continue
-            for tr1 in self._trans[s1]:
-                for sym, dst2_set in nfa.delta[s2].items():
+            # if (s1 not in self._trans) or (s2 not in nfa.delta):
+            #     continue
+            for tr1 in tr1_all:
+                for sym, dst2_set in tr2_all:
                     lst = None
                     if isinstance(sym, tuple):
                         lst = list(sym)+[sym]
@@ -206,14 +231,18 @@ class RRTransducer:
                     if sat == False:
                         continue
 
-                    if (s1,s2) not in trans:
-                        trans[(s1, s2)] = list()
+                    # if (s1,s2) not in trans:
+                    #     trans[(s1, s2)] = list()
                     for dst2 in list(dst2_set):
                         reg_upd = RRTransducer._register_symbol(tr1.reg_update, varsym)
-                        trans[(s1, s2)].append(RRTTransition((s1, s2), \
+                        new_tran = RRTTransition((s1, s2), \
                             rm_grds, RRTransducer._register_symbol(tr1.tape_update, varsym),\
                             reg_upd, \
-                            (tr1.dest, dst2), sym))
+                            (tr1.dest, dst2), sym)
+                        try:
+                            trans[(s1, s2)].append(new_tran)
+                        except KeyError:
+                            trans[(s1, s2)] = [new_tran]
 
                         dst_state = (tr1.dest, dst2)
                         if dst_state not in com_states:
@@ -302,14 +331,21 @@ class RRTransducer:
         inits = copy(state_stack)
         finals = set()
 
+
         while state_stack:
             s, regs = state_stack.pop()
             if s in self._fin:
                 finals.add((s, regs))
-            if s not in self._trans:
+            tr_all = None
+            try:
+                tr_all = self._trans[s]
+            except KeyError:
                 continue
-            for tr in self._trans[s]:
-                varsym = dict(regs)
+            # if s not in self._trans:
+            #     continue
+            d = dict(regs)
+            for tr in tr_all:
+                varsym = copy(d)
                 sat, rm_grds = self._guard_sat(varsym, tr.guard)
                 if sat is None or len(rm_grds) > 0:
                     raise Exception("Guard with free variables")
@@ -320,9 +356,12 @@ class RRTransducer:
                 tp_update = RRTransducer._register_symbol(tr.tape_update, varsym)
                 varsym.update(dict(RRTransducer._register_symbol(tr.reg_update, varsym)))
                 dest = (tr.dest, frozenset(varsym.items()))
-                if (s, regs) not in trans:
-                    trans[(s, regs)] = list()
-                trans[(s, regs)].append(RRTTransition((s, regs), [], tp_update, [], dest, tr.label))
+                # if (s, regs) not in trans:
+                #     trans[(s, regs)] = list()
+                try:
+                    trans[(s, regs)].append(RRTTransition((s, regs), [], tp_update, [], dest, tr.label))
+                except KeyError:
+                    trans[(s, regs)] = [RRTTransition((s, regs), [], tp_update, [], dest, tr.label)]
                 if dest not in states:
                     state_stack.append(dest)
                     states.add(dest)
