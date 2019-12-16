@@ -1,7 +1,9 @@
 ---
 title: "Retro Result Analysis"
 params:
-  dir: kaluza-hard
+  #dir: kaluza-hard
+  dir: str2_1
+  suffix: str2
 output:
   html_notebook:
     code_folding: hide
@@ -36,7 +38,7 @@ TIMEOUT_VAL = 1.05 * TIMEOUT
 
 # FUNCTIONS
 read_file <- function(approach) {
-  filename = paste0("./", params$dir, "/", approach, "-", params$dir, ".csv")
+  filename = paste0("./", params$dir, "/", approach, "-", params$suffix, ".csv")
   df <- read.csv2(filename,
                   header=TRUE,
                   sep=";",
@@ -88,11 +90,12 @@ merge_dfs <- function(ls) {
 
 ```{r echo=FALSE}
 df_rmc <- read_file("rmc")
-df_rmc_heur <- read_file("rmc_heur")
+#df_rmc_heur <- read_file("rmc_heur")
 df_cvc4 <- read_file("cvc4")
 df_z3 <- read_file("z3")
 
-df <- merge_dfs(list(df_rmc, df_rmc_heur, df_cvc4, df_z3))
+#df <- merge_dfs(list(df_rmc, df_rmc_heur, df_cvc4, df_z3))
+df <- merge_dfs(list(df_rmc, df_cvc4, df_z3))
 ```
 
 These are results of the experiments for Retro:
@@ -141,14 +144,16 @@ plot_scatter <- function(df, xlab, ylab) {
 }
 
 plot1 <- plot_scatter(df, "time.rmc", "time.cvc4")
-plot2 <- plot_scatter(df, "time.rmc_heur", "time.cvc4")
+#plot2 <- plot_scatter(df, "time.rmc_heur", "time.cvc4")
 
-grid.arrange(plot1, plot2, ncol = 2)
+#grid.arrange(plot1, plot2, ncol = 2)
+grid.arrange(plot1, ncol = 1)
 
 plot1 <- plot_scatter(df, "time.rmc", "time.z3")
-plot2 <- plot_scatter(df, "time.rmc_heur", "time.z3")
+#plot2 <- plot_scatter(df, "time.rmc_heur", "time.z3")
 
-grid.arrange(plot1, plot2, ncol = 2)
+#grid.arrange(plot1, plot2, ncol = 2)
+grid.arrange(plot1, ncol = 1)
 
 plot1 <- plot_scatter(df, "time.cvc4", "time.z3")
 plot(plot1)
@@ -182,7 +187,7 @@ make_cactus <- function(df, title) {
   pcactus <- ggplot()
 
   pcactus <- add_to_cactus(pcactus, df, "time.rmc", "RMC")
-  pcactus <- add_to_cactus(pcactus, df, "time.rmc_heur", "RMC-heur")
+  #pcactus <- add_to_cactus(pcactus, df, "time.rmc_heur", "RMC-heur")
   pcactus <- add_to_cactus(pcactus, df, "time.cvc4", "CVC4")
   pcactus <- add_to_cactus(pcactus, df, "time.z3", "Z3")
   
