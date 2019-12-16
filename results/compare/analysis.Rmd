@@ -61,16 +61,26 @@ read_file <- function(approach) {
 merge_dfs <- function(ls) {
   df <- ls[[1]]
   for(i in 2:length(ls)) {
-    # TODO: check consistency of results
     df_ls <- ls[[i]]
+
+    # extract "sat" columns    
+    orig_sat <- as.character(df[["sat"]])
+    new_sat <- as.character(df_ls[["sat"]])
     
-    orig_sat <- df[["sat"]]
-    new_sat <- df_ls[["sat"]]
+    # check the results are consistent
+    sanity_check = (new_sat == orig_sat)
+    stopifnot(all(sanity_check, na.rm=TRUE))
     
-    timecol_name <- grep("time.", names(df_ls), value = TRUE)
+    # construct new "sat" column
+    filled_sat <- ifelse(is.na(orig_sat), new_sat, orig_sat)
+    df$sat <- filled_sat
+    
+    # rename the time column
+    timecol_name <- grep("time.", names(df_ls), value=TRUE)
     df_aux <- df_ls[, c("Formula", timecol_name)]
     
-    df <- merge(df, df_aux, by = "Formula")
+    # merge with the rest
+    df <- merge(df, df_aux, by="Formula")
   }
   return(df)
 }
@@ -82,9 +92,7 @@ df_rmc_heur <- read_file("rmc_heur")
 df_cvc4 <- read_file("cvc4")
 df_z3 <- read_file("z3")
 
-
 df <- merge_dfs(list(df_rmc, df_rmc_heur, df_cvc4, df_z3))
-
 ```
 
 These are results of the experiments for Retro:
@@ -170,48 +178,33 @@ add_to_cactus <- function(pcactus, df, col, colour) {
   return(pcactus)
 }
 
+make_cactus <- function(df, title) {
+  pcactus <- ggplot()
 
-# df_cactus <- get_sorted_col(df, "time.rmc")
-# names(df_cactus)[names(df_cactus) == "time"] <- "rmc"
-# df_aux <- get_sorted_col(df, "time.cvc4")
-# names(df_aux)[names(df_aux) == "time"] <- "cvc4"
-# df_cactus <- merge(df_cactus, df_aux, all=TRUE)
-# 
-# df_aux <- get_sorted_col(df, "time.rmc_heur")
-# names(df_aux)[names(df_aux) == "time"] <- "rmc_heur"
-# df_cactus <- merge(df_cactus, df_aux, all=TRUE)
-# 
-# df_aux <- get_sorted_col(df, "time.z3")
-# names(df_aux)[names(df_aux) == "time"] <- "z3"
-# df_cactus <- merge(df_cactus, df_aux, all=TRUE)
-# 
-# pcactus <- ggplot(df_cactus, aes(x=index)) +
-#   geom_line(aes(y=rmc, color="RMC"), na.rm=TRUE) +
-#   geom_line(aes(y=rmc_heur, color="RMC_heur"), na.rm=TRUE) +
-#   geom_line(aes(y=cvc4, color="CVC4"), na.rm=TRUE) +
-#   geom_line(aes(y=z3, color="Z3"), na.rm=TRUE) #+
-#  # scale_color_discrete(name = "Dose", labels = c("RMC", "RMC-heur", "C", "D"))
-# 
-# 
+  pcactus <- add_to_cactus(pcactus, df, "time.rmc", "RMC")
+  pcactus <- add_to_cactus(pcactus, df, "time.rmc_heur", "RMC-heur")
+  pcactus <- add_to_cactus(pcactus, df, "time.cvc4", "CVC4")
+  pcactus <- add_to_cactus(pcactus, df, "time.z3", "Z3")
   
+  pcactus <- pcactus + labs(
+               title=title,
+               subtitle="Subtitle",
+               x="Benchmarks",
+               y="Time [s]")
 
+  return(pcactus)
+}
 
-pcactus <- ggplot()
-
-pcactus <- add_to_cactus(pcactus, df, "time.rmc", "RMC")
-pcactus <- add_to_cactus(pcactus, df, "time.rmc_heur", "RMC-heur")
-pcactus <- add_to_cactus(pcactus, df, "time.cvc4", "CVC4")
-pcactus <- add_to_cactus(pcactus, df, "time.z3", "Z3")
-# 
-# #pcactus <- pcactus + scale_color_manual(name = "Y series", , labels = c("RMC", "RMC-heur", "CVC4", "Z3"))
-# pcactus <- pcactus + scale_color_manual(values=c("1"="blue", "2"="red", "3"="green"))
-pcactus <- pcactus + labs(
-             title="Cactus plot",
-             subtitle="Subtitle",
-             x="Benchmarks",
-             y="Time [s]")
+pcactus <- make_cactus(df, "All")
 plot(pcactus)
 
+df_sat <- df[df$sat == "sat",]
+print(df_sat)
+plot(make_cactus(df_sat, "sat"))
+
+df_unsat <- df[df$sat == "unsat",]
+print(df_unsat)
+plot(make_cactus(df_unsat, "unsat"))
 
 
 ```
