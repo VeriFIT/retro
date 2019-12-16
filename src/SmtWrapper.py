@@ -359,6 +359,13 @@ class SmtWrapper:
                 fl.map_variables(lambda x: var_dict[x])
 
 
+    def contains_len_constr(self):
+        for fl in self.formulas:
+            if fl.is_constraint():
+                return True
+        return False
+
+
     @staticmethod
     def nfa_from_string(lst, sl=True):
         states = list(range(0,len(lst)))

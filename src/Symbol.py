@@ -54,8 +54,10 @@ class Symbol:
     def __hash__(self):
         if self.type == 0:
             return (-self.val)
-        else:
+        elif self.type == 1:
             return (self.val)
+        else:
+            return hash(self.val)
 
 
     def __repr__(self):
