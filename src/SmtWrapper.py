@@ -79,6 +79,19 @@ class SmtWrapper:
         return side
 
 
+    def light_unsat_check(self):
+        for fl in self.formulas:
+            if fl.is_str_equation():
+                eq = fl.formulas[0]
+                v1 = eq.formulas[0].get_variables()
+                v2 = eq.formulas[1].get_variables()
+                if len(v1) == 0 and len(v2) == 0:
+                    left, right = SmtWrapper._get_str_equation(eq)
+                    if left != right:
+                        return True
+        return False
+
+
     def split_to_chunks(self):
         chunks = list()
         processed = list()
@@ -107,6 +120,8 @@ class SmtWrapper:
         processed_sort = list()
         for i in index_sort:
             processed_sort.append(processed[i])
+        for i in index_sort:
+            processed_sort[i].sort(key=lambda x: x.count_items(), reverse=True)
 
         return processed_sort
 

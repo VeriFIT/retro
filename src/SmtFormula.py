@@ -100,6 +100,18 @@ class SmtFormula:
         return ret
 
 
+    def count_items(self):
+        if self.type == EqFormulaType.VAR:
+            return 1
+        if self.type == EqFormulaType.LITER:
+            return len(self.value)
+        ret = 0
+        for fl in self.formulas:
+            if fl is not None:
+                ret = ret + fl.count_items()
+        return ret
+
+
     def map_variables(self, mp):
         if self.type == EqFormulaType.VAR:
             self.value = mp(self.value)
@@ -148,10 +160,10 @@ class SmtFormula:
 
     @staticmethod
     def native_to_smt_atom(atom):
-        if atom.startswith("V"):
+        if not atom.startswith("\""):
             return SmtFormula(EqFormulaType.VAR, [], atom)
         else:
-            return SmtFormula(EqFormulaType.LITER, [], atom)
+            return SmtFormula(EqFormulaType.LITER, [], atom[1:-1])
 
 
     @staticmethod
