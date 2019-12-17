@@ -75,9 +75,9 @@ def parse_raw_equations(fd):
     for line in content:
         symbols = split_symbols(line)
         ll, rr = divide_list(symbols, "=")
-        left = list(map(_parse_liter, ll))
-        right = list(map(_parse_liter, rr))
-        ret.append((left,right))
+        #left = list(map(_parse_liter, ll))
+        #right = list(map(_parse_liter, rr))
+        ret.append((ll,rr))
     return ret
 
 

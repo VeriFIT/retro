@@ -3,6 +3,7 @@
 import sys
 import time
 
+import RetroConfig
 import RRTransducer
 from Symbol import *
 from LabelNFA import *
@@ -14,9 +15,10 @@ from SmtWrapper import *
 
 from FAdo.fa import *
 
-def get_eq_items(smt_formula, incl_len=True):
+def get_eq_items(smt_formula, incl_len=True, syn_reduce=True):
     wrap = SmtWrapper(smt_formula)
-    wrap.syntax_reduce()
+    if syn_reduce:
+        wrap.syntax_reduce()
     vars = wrap.get_variables()
     var_dict = list(zip(vars, range(len(vars))))
     var_dict = dict(map(lambda x: (x[0], Symbol(1, x[1])), var_dict))
@@ -49,28 +51,31 @@ def get_eq_items(smt_formula, incl_len=True):
 
 def iterative_solution(smt_lst, rrts):
     wrap = SmtWrapper(smt_lst)
+    if wrap.light_unsat_check() == True:
+        return None, None, False
     wrap.syntax_reduce()
 
     smt_lst = wrap.formulas
     smt_list_prime = smt_lst
 
     chunks = wrap.split_to_chunks()
+    check_all = True
+    model_all = dict()
+
     for i in range(len(chunks)):
         print(i)
-        ret, model = solve_smt(chunks[i], rrts)
+        ret, model, check = solve_smt(chunks[i], rrts)
+        if not ret and i == 0:
+            return None, None, False
         if not ret:
-            print("----")
-            print("Model check: Bad")
-            print("---")
-            return
+            return None, None, None
+        model_all.update(model)
+        check_all = check_all and check
         model = substitute_model(model)
         for fl in smt_list_prime:
             fl.substitute_vars(model)
 
-
-    print("----")
-    print("Model check: True")
-    print("Sat")
+    return model_all, check_all, True
 
 
 def substitute_model(model):
@@ -88,27 +93,27 @@ def substitute_model(model):
 
 
 def solve_smt(eqs_lst, rrts):
-    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(eqs_lst)
+    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(eqs_lst, True, False)
     var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
     if is_len:
         rrts = rrts_all[2:4]
         ret, _ = rmc_loop_nfa(str_eq, rrts)
         if not ret:
-            return ret, None
+            return ret, None, None
         else:
             rrts = rrts_all[0:2]
             ret, model = rmc_loop_nfa(nfa_eq, rrts)
             if ret:
                 ren_model = rename_model(model, var_dict_rev)
-                return ret, ren_model
-            return ret, None
+                return ret, ren_model, check_model(model, raw_eq)
+            return ret, None, None
     else:
         rrts = rrts_all[2:4]
         ret, model = rmc_loop_nfa(nfa_eq, rrts)
         if ret:
             ren_model = rename_model(model, var_dict_rev)
-            return ret, ren_model
-        return ret, None
+            return ret, ren_model, check_model(model, raw_eq)
+        return ret, None, None
 
 
 def len_constr_word(word):
@@ -274,15 +279,32 @@ def get_model(word, lengths, rrts):
     return model
 
 
-def rmc_solve(nfa_eq, rrts, var_dict_rev, raw_eq):
+def rmc_solve_wrap(nfa_eq, rrts, var_dict_rev, raw_eq):
     ret, model = rmc_loop_nfa(nfa_eq, rrts)
     if ret:
         ren_model = rename_model(model, var_dict_rev)
-        print(ren_model)
-        print("Model check: {0}".format(check_model(model, raw_eq)))
-        print("Sat")
+        return ret, ren_model, check_model(model, raw_eq)
     else:
-        print("Unsat")
+        return False, None, None
+
+
+def rmc_solve(rrts_all, smt_for):
+    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, False)
+    var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
+    ret = None
+    if is_len:
+        rrts = rrts_all[2:4]
+        ret, _ = rmc_loop_nfa(str_eq, rrts)
+        if not ret:
+            return False, None, None
+        else:
+            nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, True)
+            rrts = rrts_all[0:2]
+            return rmc_solve_wrap(nfa_eq, rrts, var_dict_rev, raw_eq)
+    else:
+        rrts = rrts_all[2:4]
+        return rmc_solve_wrap(nfa_eq, rrts, var_dict_rev, raw_eq)
+
 
 
 def _tmp_nfa():
@@ -321,28 +343,28 @@ if __name__ == '__main__':
     start_time = time.time()
 
     smt_for = parse_smt_file(fd_eq)
-    #smt_for = list(filter(lambda x: x.is_str_equation(), smt_for))
+    smt_for_filter = list(filter(lambda x: x.is_str_equation(), smt_for))
 
-    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, False)
-    var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
-    ret = None
+    # nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, False)
+    # var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
+    # ret = None
 
     trs = list(map (parse_rrt, fd_aut))
     rrts_all = list(map (autdict2RRTransducer, trs))
 
-    #iterative_solution(smt_for, rrts_all)
-    if is_len:
-        rrts = rrts_all[2:4]
-        ret, _ = rmc_loop_nfa(str_eq, rrts)
-        if not ret:
-            print("Unsat")
-        else:
-            nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, True)
-            rrts = rrts_all[0:2]
-            rmc_solve(nfa_eq, rrts, var_dict_rev, raw_eq)
+    model, check, sat = None, None, None
+    if RetroConfig.MULTI_EQ_OPTIMIZATION:
+        model, check, sat = iterative_solution(smt_for_filter, rrts_all)
+    if sat is None:
+        print("backtrack")
+        sat, model, check = rmc_solve(rrts_all, smt_for)
+
+    if sat == True:
+        print(model)
+        print("Model check: {0}".format(check))
+        print("sat")
     else:
-        rrts = rrts_all[2:4]
-        rmc_solve(nfa_eq, rrts, var_dict_rev, raw_eq)
+        print("unsat")
 
     print("Time: {0}".format(round(time.time() - start_time, 2)))
 

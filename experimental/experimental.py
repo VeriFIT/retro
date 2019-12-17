@@ -89,7 +89,7 @@ def main():
     files = files[:FORMULAS]
 
     print_config(FORMULAS)
-    print("Formula: time, sat")
+    print("Formula;sat;time;aux")
 
     for eq_file in files:
         filename = os.path.join(formulafolder, eq_file)
@@ -110,7 +110,7 @@ def parse_output_rmc(output):
     lines = list(filter(None, lines)) #Remove empty lines
     sat = lines[SATLINE]
     model_check = str()
-    if sat == "Sat":
+    if sat == "sat":
         match = re.search("Model check: ([a-zA-Z]+)", lines[MODEL_CHECK])
         model_check = match.group(1)
     match = re.search("Time: ([0-9]+.[0-9]+)", lines[TIMELINE])
@@ -119,8 +119,8 @@ def parse_output_rmc(output):
 
 
 def print_config(formulas):
-    print("Timeout: {0}".format(TIMEOUT))
-    print("Number of formulas: {0}".format(formulas))
+    print("#Timeout: {0}".format(TIMEOUT))
+    print("#Number of formulas: {0}".format(formulas))
 
 
 def format_output(parse):
@@ -128,12 +128,12 @@ def format_output(parse):
 
 
 def print_output_rmc(filename, rmc_parse):
-    print("{0}: {1}\t {2}\t {3}".format(filename, format_output(rmc_parse[0]), \
+    print("{0};{1};{2};{3}".format(filename, format_output(rmc_parse[0]), \
         format_output(rmc_parse[1]), format_output(rmc_parse[2])))
 
 
 def print_output(filename, parse):
-    print("{0}: {1}\t {2}".format(filename, format_output(parse[0]), format_output(parse[1])))
+    print("{0};{1};{2}".format(filename, format_output(parse[0]), format_output(parse[1])))
 
 
 def parse_output_z3(output):
