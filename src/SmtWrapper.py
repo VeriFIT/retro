@@ -148,26 +148,28 @@ class SmtWrapper:
         return None
 
 
-
-
-    @staticmethod
-    def _get_side_atoms(smt_side):
-        if smt_side.type == EqFormulaType.CONCAT:
-            return SmtWrapper._get_side_atoms(smt_side.formulas[0]) + SmtWrapper._get_side_atoms(smt_side.formulas[1])
-        elif smt_side.type == EqFormulaType.LITER:
-            return [smt_side]
-        elif smt_side.type == EqFormulaType.VAR:
-            return [smt_side]
-        raise Exception("Unexpected formula")
-
-
     def get_eqs_atoms(self):
         ret = list()
         for formula in self.formulas:
             if formula.is_str_equation():
-                sides = formula.get_eq_sides()
-                ret.append((SmtWrapper._get_side_atoms(sides[0]), SmtWrapper._get_side_atoms(sides[1])))
+                ret.append(formula.get_formula_atoms())
         return ret
+
+
+    def propagate_constants_check(self):
+        subs = dict()
+        for formula in self.formulas:
+            if formula.is_str_equation():
+                var_dict = formula.const_propagation_dict()
+                for k, v in var_dict.items():
+                    if k in subs and subs[k] != var_dict[k]:
+                        return False
+                subs.update(var_dict)
+        for formula in self.formulas:
+            if formula.is_str_equation():
+                formula.substitute_vars(subs)
+        return True
+
 
 
     @staticmethod
@@ -250,13 +252,19 @@ class SmtWrapper:
 
     @staticmethod
     def _remove_simple_eqs(eqs):
-        ret = eqs
+        ret = copy(eqs)
         for eq in eqs:
-            if (len(eq[0]) == 1) and (len(eq[1]) == 1) and \
-                (eq[0][0].type == EqFormulaType.VAR) and (eq[1][0].type == EqFormulaType.VAR):
-                if count_sublist_eqs(eq[0], eqs) == 1:
+            left, right = eq
+            lileft = all([x.type == EqFormulaType.LITER for x in left])
+            liright = all([x.type == EqFormulaType.LITER for x in right])
+            if len(left) == 1 and len(right) == 1 and \
+                (left[0].type == EqFormulaType.VAR) and (right[0].type == EqFormulaType.VAR):
+                if count_sublist_eqs(left, eqs) == 1:
                     ret.remove(eq)
-                elif count_sublist_eqs(eq[1], eqs) == 1:
+                elif count_sublist_eqs(right, eqs) == 1:
+                    ret.remove(eq)
+            elif lileft and liright:
+                if "".join([x.value for x in left]) == "".join([x.value for x in right]):
                     ret.remove(eq)
         return ret
 
@@ -265,12 +273,17 @@ class SmtWrapper:
         vars = self.get_variables()
         vars_n = len(vars) + 1
         eqs = self.get_eqs_atoms()
+
+        eqs = SmtWrapper._remove_simple_eqs(eqs)
         eqs = SmtWrapper._replace_side_all(eqs, vars_n)
         max_n = vars_n + len(eqs)
         eqs = SmtWrapper._replace_pairs_all(eqs, max_n)
         eqs = SmtWrapper._remove_simple_eqs(eqs)
 
         vars = SmtWrapper._get_var_from_eqs(eqs)
+
+        flt_eps = lambda lst: list(filter(lambda x: x.type != EqFormulaType.LITER or x.value != "", lst))
+        eqs = list(map(lambda x: (flt_eps(x[0]), flt_eps(x[1])), eqs))
         eqs = list(map(lambda x: SmtWrapper._atoms_smt_eq(x[0], x[1]), eqs))
         #decls = list(map(lambda x: SmtFormula(EqFormulaType.DECL, [x, None, SmtFormula(EqFormulaType.VAR, [], "String")]), vars))
 
@@ -304,6 +317,8 @@ class SmtWrapper:
 
         if not isinstance(side, list):
             return side
+        if len(side) == 0:
+            return SmtFormula(EqFormulaType.LITER, [], "")
         if len(side) == 1:
             return side[0]
 

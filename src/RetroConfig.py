@@ -2,4 +2,4 @@
 """
 Use many equations optimizations
 """
-MULTI_EQ_OPTIMIZATION = False
+MULTI_EQ_OPTIMIZATION = True

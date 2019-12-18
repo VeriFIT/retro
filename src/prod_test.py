@@ -17,7 +17,10 @@ from FAdo.fa import *
 
 def get_eq_items(smt_formula, incl_len=True, syn_reduce=True):
     wrap = SmtWrapper(smt_formula)
+    sat = None
     if syn_reduce:
+        if not wrap.propagate_constants_check():
+            sat = False
         wrap.syntax_reduce()
     vars = wrap.get_variables()
     var_dict = list(zip(vars, range(len(vars))))
@@ -46,13 +49,17 @@ def get_eq_items(smt_formula, incl_len=True, syn_reduce=True):
     str_nfa_eq = wrap.get_str_eq_automata(eqs)
     nfa_eq = nfa_eq.minimal().toNFA()
     nfa_eq.renameStates()
-    return nfa_eq, var_dict, is_len, raw_eq, str_nfa_eq
+    return nfa_eq, var_dict, is_len, raw_eq, str_nfa_eq, sat
 
 
 def iterative_solution(smt_lst, rrts):
     wrap = SmtWrapper(smt_lst)
     if wrap.light_unsat_check() == True:
-        return None, None, False
+        return False, None, None
+    if not wrap.propagate_constants_check():
+        return False, None, None
+    if not wrap.propagate_constants_check():
+        return False, None, None
     wrap.syntax_reduce()
 
     smt_lst = wrap.formulas
@@ -63,10 +70,10 @@ def iterative_solution(smt_lst, rrts):
     model_all = dict()
 
     for i in range(len(chunks)):
-        print(i)
+        #print(i)
         ret, model, check = solve_smt(chunks[i], rrts)
         if not ret and i == 0:
-            return None, None, False
+            return False, None, None
         if not ret:
             return None, None, None
         model_all.update(model)
@@ -75,7 +82,7 @@ def iterative_solution(smt_lst, rrts):
         for fl in smt_list_prime:
             fl.substitute_vars(model)
 
-    return model_all, check_all, True
+    return True, model_all, check_all
 
 
 def substitute_model(model):
@@ -93,7 +100,9 @@ def substitute_model(model):
 
 
 def solve_smt(eqs_lst, rrts):
-    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(eqs_lst, True, False)
+    nfa_eq, var_dict, is_len, raw_eq, str_eq, sat = get_eq_items(eqs_lst, True, False)
+    if sat == False:
+        return False, None, None
     var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
     if is_len:
         rrts = rrts_all[2:4]
@@ -289,7 +298,9 @@ def rmc_solve_wrap(nfa_eq, rrts, var_dict_rev, raw_eq):
 
 
 def rmc_solve(rrts_all, smt_for):
-    nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, False)
+    nfa_eq, var_dict, is_len, raw_eq, str_eq, sat = get_eq_items(smt_for, False)
+    if sat == False:
+        return False, None, None
     var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
     ret = None
     if is_len:
@@ -298,7 +309,9 @@ def rmc_solve(rrts_all, smt_for):
         if not ret:
             return False, None, None
         else:
-            nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, True)
+            nfa_eq, var_dict, is_len, raw_eq, str_eq, sat = get_eq_items(smt_for, True)
+            if sat == False:
+                return False, None, None
             rrts = rrts_all[0:2]
             return rmc_solve_wrap(nfa_eq, rrts, var_dict_rev, raw_eq)
     else:
@@ -354,9 +367,8 @@ if __name__ == '__main__':
 
     model, check, sat = None, None, None
     if RetroConfig.MULTI_EQ_OPTIMIZATION:
-        model, check, sat = iterative_solution(smt_for_filter, rrts_all)
+        sat, model, check = iterative_solution(smt_for_filter, rrts_all)
     if sat is None:
-        print("backtrack")
         sat, model, check = rmc_solve(rrts_all, smt_for)
 
     if sat == True:

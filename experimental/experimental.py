@@ -20,7 +20,7 @@ SATLINE = -2
 TIMELINE = -1
 MODEL_CHECK = -3
 TIMEOUT = 10 #in seconds
-FORMULAS = 1000
+FORMULAS = 100000
 
 class ToolType(Enum):
     RMC = 1
@@ -44,7 +44,7 @@ def main():
     formulafolder = sys.argv[2]
     texout = False
     tool = None
-    FORMULAS = 1000
+    FORMULAS = 100000
 
     for o, a in opts:
         if o in ("-t", "--tex"):

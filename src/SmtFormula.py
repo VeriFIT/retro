@@ -158,6 +158,43 @@ class SmtFormula:
                 fl.substitute_vars(var_dict)
 
 
+    def get_formula_atoms(self):
+        if self.type == EqFormulaType.ASSERT:
+            return self.formulas[0].get_formula_atoms()
+        if self.type == EqFormulaType.EQ:
+            return self.formulas[0].get_formula_atoms(), self.formulas[1].get_formula_atoms()
+        if self.type == EqFormulaType.CONCAT:
+            return self.formulas[0].get_formula_atoms() + self.formulas[1].get_formula_atoms()
+        elif self.type == EqFormulaType.LITER:
+            return [self]
+        elif self.type == EqFormulaType.VAR:
+            return [self]
+        raise Exception("Unexpected formula")
+
+
+    def const_propagation_dict(self):
+        var_dict = dict()
+        left, right = self.get_formula_atoms()
+        lileft = all([x.type == EqFormulaType.LITER for x in left])
+        liright = all([x.type == EqFormulaType.LITER for x in right])
+        vleft = all([x.type == EqFormulaType.VAR for x in left])
+        vright = all([x.type == EqFormulaType.VAR for x in right])
+        epsleft = lileft and all([x.value == "" for x in left])
+        epsright = liright and all([x.value == "" for x in right])
+
+        if len(left) == 1 and vleft and liright:
+            var_dict[left[0].value] = "".join([x.value for x in right])
+        elif len(right) == 1 and vright and lileft:
+            var_dict[right[0].value] = "".join([x.value for x in left])
+        elif vleft and epsright:
+            for item in left:
+                var_dict[item.value] = ""
+        elif vright and epsleft:
+            for item in right:
+                var_dict[item.value] = ""
+        return var_dict
+
+
     @staticmethod
     def native_to_smt_atom(atom):
         if not atom.startswith("\""):
