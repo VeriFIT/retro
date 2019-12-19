@@ -144,8 +144,11 @@ def contains_solution(nfa):
                     state_stack.append(dst)
     return False
 
-
-#Taken from FADO library
+"""
+Taken from the FADO library and modified
+.. *Authors:* Rogério Reis & Nelma Moreira
+.. *This is part of FAdo project*   http://fado.dcc.fc.up.pt.
+"""
 def toDFA(aut):
     aut.elimEpsilon()
 
@@ -197,17 +200,13 @@ def get_succ_set(aut, state_set, sym):
                 ret[sm] = ret[sm] | frozenset(to)
             except:
                 ret[sm] = frozenset(to)
-        # try:
-        #     ls = aut.delta[s][sym]
-        # except KeyError:
-        #     ls = set()
-        # except NameError:
-        #     ls = set()
-        # res = res | ls
     return ret
-    #return frozenset(res)
 
 
-#Taken from FADO library
+"""
+Taken from the FADO library and modified
+.. *Authors:* Rogério Reis & Nelma Moreira
+.. *This is part of FAdo project*   http://fado.dcc.fc.up.pt.
+"""
 def minimalBrzozowski(aut):
     return toDFA(toDFA(aut.reversal()).reversal())
