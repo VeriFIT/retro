@@ -1,7 +1,6 @@
 #Timeout: 20
 #Number of formulas: 100000
 #formula;sat;time;aux
-all.txt.smt2;sat;0.06;
 eq0.txt.smt2;unsat;0.06;
 eq1.txt.smt2;unsat;0.06;
 eq10.txt.smt2;unsat;0.06;
@@ -6669,7 +6668,6 @@ eq15995.txt.smt2;unsat;0.06;
 eq15996.txt.smt2;unsat;0.06;
 eq15997.txt.smt2;unsat;0.06;
 eq15998.txt.smt2;unsat;0.06;
-eq15999.txt.smt2;unsat;0.06;
 eq16.txt.smt2;unsat;0.06;
 eq160.txt.smt2;unsat;0.06;
 eq1600.txt.smt2;unsat;0.06;
@@ -10022,7 +10020,6 @@ eq19011.txt.smt2;unsat;0.06;
 eq19012.txt.smt2;unsat;0.06;
 eq19013.txt.smt2;unsat;0.06;
 eq19014.txt.smt2;unsat;0.06;
-eq19015.txt.smt2;unsat;0.06;
 eq19016.txt.smt2;unsat;0.06;
 eq19017.txt.smt2;unsat;0.06;
 eq19018.txt.smt2;unsat;0.06;
@@ -15513,7 +15510,6 @@ eq593.txt.smt2;unsat;0.06;
 eq5930.txt.smt2;unsat;0.06;
 eq5931.txt.smt2;unsat;0.06;
 eq5932.txt.smt2;unsat;0.06;
-eq5933.txt.smt2;unsat;0.06;
 eq5934.txt.smt2;sat;5.78;
 eq5935.txt.smt2;unsat;0.06;
 eq5936.txt.smt2;unsat;1.34;
@@ -19084,7 +19080,6 @@ eq9143.txt.smt2;unsat;0.06;
 eq9144.txt.smt2;unsat;0.06;
 eq9145.txt.smt2;unsat;0.06;
 eq9146.txt.smt2;unsat;0.06;
-eq9147.txt.smt2;unsat;0.06;
 eq9148.txt.smt2;sat;5.15;
 eq9149.txt.smt2;unsat;0.06;
 eq915.txt.smt2;unsat;0.06;
@@ -19399,7 +19394,6 @@ eq9427.txt.smt2;unsat;0.06;
 eq9428.txt.smt2;unsat;0.06;
 eq9429.txt.smt2;unsat;0.06;
 eq943.txt.smt2;unsat;0.06;
-eq9430.txt.smt2;unsat;0.06;
 eq9431.txt.smt2;unsat;0.06;
 eq9432.txt.smt2;unsat;0.06;
 eq9433.txt.smt2;unsat;0.06;
