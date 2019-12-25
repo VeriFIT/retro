@@ -12,6 +12,7 @@ from RRTParser import parse_rrt, autdict2RRTransducer
 from EquationParser import parse_equations, nfa_from_string
 from SmtParser import *
 from SmtWrapper import *
+from copy import deepcopy
 
 from FAdo.fa import *
 
@@ -356,7 +357,8 @@ if __name__ == '__main__':
     start_time = time.time()
 
     smt_for = parse_smt_file(fd_eq)
-    smt_for_filter = list(filter(lambda x: x.is_str_equation(), smt_for))
+    smt_for_copy = deepcopy(smt_for)
+    smt_for_filter = copy(list(filter(lambda x: x.is_str_equation(), smt_for)))
 
     # nfa_eq, var_dict, is_len, raw_eq, str_eq = get_eq_items(smt_for, False)
     # var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
@@ -369,7 +371,7 @@ if __name__ == '__main__':
     if RetroConfig.MULTI_EQ_OPTIMIZATION:
         sat, model, check = iterative_solution(smt_for_filter, rrts_all)
     if sat is None:
-        sat, model, check = rmc_solve(rrts_all, smt_for)
+        sat, model, check = rmc_solve(rrts_all, smt_for_copy)
 
     if sat == True:
         print(model)
