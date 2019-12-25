@@ -1,6 +1,6 @@
 #Timeout: 20
 #Number of formulas: 100000
-#formula;sat;time;aux
+Formula;sat;time;aux
 eq0.txt.smt2;unsat;0.06;
 eq1.txt.smt2;unsat;0.06;
 eq10.txt.smt2;unsat;0.06;
@@ -240,7 +240,6 @@ eq10208.txt.smt2;unsat;0.06;
 eq10209.txt.smt2;unsat;0.06;
 eq1021.txt.smt2;unsat;0.06;
 eq10210.txt.smt2;unsat;0.06;
-eq10211.txt.smt2;sat;0.06;
 eq10212.txt.smt2;sat;5.41;
 eq10213.txt.smt2;sat;5.11;
 eq10214.txt.smt2;unsat;0.67;
