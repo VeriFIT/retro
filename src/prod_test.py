@@ -28,9 +28,9 @@ def get_eq_items(smt_formula, incl_len=True, syn_reduce=True):
     var_dict = dict(map(lambda x: (x[0], Symbol(1, x[1])), var_dict))
     is_len = False
 
-    wrap.len_constr_rename_var(var_dict)
+    #wrap.len_constr_rename_var(var_dict)
     if incl_len:
-        pres_for = wrap.get_conj_pres_formula()
+        pres_for = wrap.get_conj_pres_formula(var_dict)
     else:
         pres_for = None
 

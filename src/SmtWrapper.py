@@ -26,11 +26,13 @@ class SmtWrapper:
         return ret
 
 
-    def get_conj_pres_formula(self):
+    def get_conj_pres_formula(self, var_dict):
         ret = list()
         for fl in self.formulas:
             if fl.is_constraint():
-                ret.append(SmtWrapper.get_pres_formula(fl))
+                cp = deepcopy(fl)
+                cp.map_variables(lambda x: var_dict[x])
+                ret.append(SmtWrapper.get_pres_formula(cp))
         if len(ret) == 0:
             return None
         if len(ret) == 1:
@@ -45,7 +47,7 @@ class SmtWrapper:
     def get_variables(self):
         ret = set()
         for fl in self.formulas:
-            if fl is not None:
+            if fl.is_constraint() or fl.is_str_equation():
                 ret = ret | set(fl.get_variables())
         return ret
 

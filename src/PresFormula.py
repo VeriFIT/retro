@@ -39,7 +39,7 @@ class PresFormula:
         if self.type == PresFormulaType.LEQ:
             return PresFormula._leq_to_dfa(self.value[0], self.value[1], self.value[2])
         elif self.type == PresFormulaType.LE:
-            return PresFormula._leq_to_dfa(self.value[0], self.value[1], self.value[2], True)
+            return PresFormula._leq_to_dfa(self.value[0], self.value[1], self.value[2] - 1)
         elif self.type == PresFormulaType.EQ:
             return PresFormula._eq_to_dfa(self.value[0], self.value[1], self.value[2])
         elif self.type == PresFormulaType.CONJ:
