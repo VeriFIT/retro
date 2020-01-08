@@ -1,6 +1,10 @@
 # Retro
 
-Running the tool:
+To run the tool use the script:
 ```
-python3 prod_test.py <eq.smt> ../automata/rrt-x-yx-len.vtf ../automata/rrt-x-eps-len.vtf ../automata/rrt-x-yx.vtf ../automata/rrt-x-eps.vtf
+$ ./runtool <eq.smt>
+```
+or explicitly:
+```
+$ python3 rmc-solve.py <eq.smt> ../automata/rrt-x-yx-len.vtf ../automata/rrt-x-eps-len.vtf ../automata/rrt-x-yx.vtf ../automata/rrt-x-eps.vtf
 ```
