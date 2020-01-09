@@ -370,6 +370,14 @@ class RRTransducer:
             self._hist_regs, self._stack_regs, inits, list(finals), trans)
 
 
+    def bad_state(self):
+        for _,trs in self._trans.items():
+            for tr in trs:
+                if tr.src[0][0] == "bad" or tr.dest[0][0] == "bad":
+                    return True
+        return False
+
+
     ############################################################################
     def _symbol_from_tape(self, tape_update):
         """
