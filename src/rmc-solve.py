@@ -11,6 +11,7 @@ from NFAOperation import *
 from RRTParser import parse_rrt, autdict2RRTransducer
 from EquationParser import parse_equations, nfa_from_string
 from SmtParser import *
+from ModelCons import *
 from SmtWrapper import *
 from copy import deepcopy
 
@@ -115,59 +116,15 @@ def solve_smt(eqs_lst, rrts):
             ret, model = rmc_loop_nfa(nfa_eq, rrts)
             if ret:
                 ren_model = rename_model(model, var_dict_rev)
-                return ret, ren_model, check_model(model, raw_eq)
+                return ret, ren_model, ModelCons.check_model(model, raw_eq)
             return ret, None, None
     else:
         rrts = rrts_all[2:4]
         ret, model = rmc_loop_nfa(nfa_eq, rrts)
         if ret:
             ren_model = rename_model(model, var_dict_rev)
-            return ret, ren_model, check_model(model, raw_eq)
+            return ret, ren_model, ModelCons.check_model(model, raw_eq)
         return ret, None, None
-
-
-def len_constr_word(word):
-    n = len(word)
-    len_constr = None
-    for i in range(n):
-        if isinstance(word[i], tuple) and word[i][0].is_len_delim() and word[i][1].is_len_delim():
-            len_constr = word[i+1:]
-            break
-    if len_constr is None:
-        return None
-
-    vars = dict(len_constr[0].val).keys()
-    base = 1
-    res = dict([(v,0) for v in vars])
-    for sym in len_constr:
-        dct = dict(sym.val)
-        for v in vars:
-            res[v] += base*dct[v]
-        base *= 2
-    return res
-
-
-def collect_eq_model(side, model):
-    ret = list()
-    for item in side:
-        if item.is_var():
-            try:
-                ret += model[item]
-            except KeyError:
-                pass
-        else:
-            ret.append(item)
-    return ret
-
-
-
-def check_model(model, raw_eq):
-    for eq in raw_eq:
-        left, right = eq
-        if collect_eq_model(left, model) != collect_eq_model(right, model):
-            return False
-    return True
-
 
 
 def rmc_loop_nfa(nfa_eq, rrts):
@@ -176,7 +133,7 @@ def rmc_loop_nfa(nfa_eq, rrts):
     trans_history = list()
 
     while True:
-        prods = [item.product(nfa_eq.toNFA()) for item in rrts]
+        prods = [item.product_fado(nfa_eq.toNFA()) for item in rrts]
         flatten = list()
         for item in prods:
             flatten.append(item.flatten())
@@ -184,6 +141,9 @@ def rmc_loop_nfa(nfa_eq, rrts):
         curr_nfa = NFA()
         trans = list()
         for rrt in flatten:
+            # if rrt.bad_state():
+            #     raise Exception("Not quadratic")
+
             rrt.rename_states()
             trans.append(rrt)
 
@@ -199,8 +159,9 @@ def rmc_loop_nfa(nfa_eq, rrts):
         if (curr_nfa.Initial & curr_nfa.Final) != set():
             word = []
             word = trans_history[-1][1].prod_out_str(word)
-            lengths = len_constr_word(word)
-            model = get_model(word, lengths, trans_history[0:-1])
+            # lengths = len_constr_word(word)
+            model_con = ModelCons(trans_history[0:-1])
+            model = model_con.get_model(word)
             return True, model
 
         # all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
@@ -218,82 +179,21 @@ def rmc_loop_nfa(nfa_eq, rrts):
         #all_nfa.renameStates()
         all_nfa = disjoint_union(all_nfa.toNFA(), curr_nfa)
         all_nfa = toDFA(all_nfa)
+        all_nfa = minimalBrzozowski(all_nfa)
+        all_nfa.renameStates()
         nfa_eq = copy(curr_nfa)
-
-
-def nielsen_rule(word1, word2, rule):
-    fst2 = None
-    for ch in word2:
-        if ch[0] != ch[1]:
-            fst2 = ch
-            break
-
-    if rule == 1:
-        if fst2[0].is_var() and fst2[0] == word1[0][0]:
-            return (fst2[0], fst2[1])
-        if fst2[1].is_var() and fst2[1] == word1[0][1]:
-            return (fst2[1], fst2[0])
-        if word1[0][0].is_blank() and word1[0][1].is_blank():
-            return nielsen_rule(word1, word2, 0)
-        else:
-            raise Exception("Non-matching word {0}; {1} -- {2}.".format(word1, word2, rule))
-    if rule == 0:
-        if fst2[1].is_var() and fst2[0] == word1[0][0]:
-            return (fst2[1], "Eps")
-        if fst2[0].is_var() and fst2[1] == word1[0][1]:
-            return (fst2[0], "Eps")
-        else:
-            raise Exception("Non-matching word {0}, {1}.".format(word1, word2))
-
-
-def get_rule(word, rrts):
-    image = rrts[0].prod_out_str(word)
-    if image is not None:
-        return image, nielsen_rule(word, image, 1)
-
-    image = rrts[1].prod_out_str(word)
-    if image is not None:
-        return image, nielsen_rule(word, image, 0)
-    return word, None
 
 
 def rename_model(model, var_dict):
     return dict([(var_dict[k], v) for k, v in model.items()])
 
 
-def get_model(word, lengths, rrts):
-    rrts.reverse()
-    rules = list()
-    image = None
-    for rrt_pair in rrts:
-        image, rule = get_rule(word, rrt_pair)
-        if rule is not None:
-            rules.append(rule)
-        word = image
-
-    model = dict()
-    if lengths is not None:
-        for k, v in lengths.items():
-            model[k] = ["X"]*v
-
-    for rule in rules:
-        if rule[1] == "Eps":
-            model[rule[0]] = []
-        else:
-            if rule[1].is_var() and (rule[1] not in model):
-                model[rule[1]] = []
-            if rule[1].is_var():
-                model[rule[0]] = model[rule[1]] + model[rule[0]]
-            else:
-                model[rule[0]] = [rule[1]] + model[rule[0]]
-    return model
-
 
 def rmc_solve_wrap(nfa_eq, rrts, var_dict_rev, raw_eq):
     ret, model = rmc_loop_nfa(nfa_eq, rrts)
     if ret:
         ren_model = rename_model(model, var_dict_rev)
-        return ret, ren_model, check_model(model, raw_eq)
+        return ret, ren_model, ModelCons.check_model(model, raw_eq)
     else:
         return False, None, None
 
@@ -321,28 +221,6 @@ def rmc_solve(rrts_all, smt_for):
 
 
 
-def _tmp_nfa():
-    m = NFA()
-    #m.setSigma({("X","a"), ("b","X"), ("c","c")})
-    x = Symbol(0, ord("X"))
-    y = Symbol(0, ord("Y"))
-    z = Symbol(0, ord("Z"))
-    m.addInitial(0)
-    m.addState(0)
-    m.addState(5)
-    m.addState(1)
-    m.addState(2)
-    m.addState(3)
-    m.addState(4)
-    m.addFinal(4)
-    m.addTransition(0, (x, y), 5)
-    m.addTransition(5, Symbol(2, frozenset([(x, 0), (y, 0), (z,1)])), 1)
-    m.addTransition(1, Symbol(2,frozenset([(x, 0), (y, 1), (z,1)])), 2)
-    m.addTransition(2, Symbol(2, frozenset([(x, 0), (y, 1), (z,1)])), 3)
-    m.addTransition(3, Symbol(2, frozenset([(x, 1), (y, 0), (z,1)])), 4)
-    return m
-
-
 ###########################################
 if __name__ == '__main__':
     argc = len(sys.argv)
@@ -368,17 +246,19 @@ if __name__ == '__main__':
     rrts_all = list(map (autdict2RRTransducer, trs))
 
     model, check, sat = None, None, None
+    #try:
     if RetroConfig.MULTI_EQ_OPTIMIZATION:
         sat, model, check = iterative_solution(smt_for_filter, rrts_all)
     if sat is None:
         sat, model, check = rmc_solve(rrts_all, smt_for_copy)
-
     if sat == True:
         print(model)
         print("Model check: {0}".format(check))
         print("sat")
     else:
         print("unsat")
+    # except Exception:
+    #     print("Not quadratic: {0}".format(sys.argv[1]))
 
     print("Time: {0}".format(round(time.time() - start_time, 2)))
 

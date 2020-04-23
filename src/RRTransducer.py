@@ -193,13 +193,13 @@ class RRTransducer:
         return ret
 
     ############################################################################
-    def product(self, nfa, lab_orig=None):
+    def product_abstract(self, nfa_trans_dict, nfa_initials, nfa_finals):
         """
         Product (composition) of NFA in FAdo and RRT. Instantiate all input
         variables (with a possible guard-sat check) with values from the
         corresponding transition of NFA.
         """
-        inits = RRTransducer._cart_list_prod(self._init, list(nfa.Initial))
+        inits = RRTransducer._cart_list_prod(self._init, list(nfa_initials))
         finals = set()
         trans = dict()
         com_states = set(copy(inits))
@@ -214,11 +214,9 @@ class RRTransducer:
             tr2_all = None
             try:
                 tr1_all = self._trans[s1]
-                tr2_all = nfa.delta[s2].items()
+                tr2_all = nfa_trans_dict[s2].items()
             except KeyError:
                 continue
-            # if (s1 not in self._trans) or (s2 not in nfa.delta):
-            #     continue
             for tr1 in tr1_all:
                 for sym, dst2_set in tr2_all:
                     lst = None
@@ -231,8 +229,6 @@ class RRTransducer:
                     if sat == False:
                         continue
 
-                    # if (s1,s2) not in trans:
-                    #     trans[(s1, s2)] = list()
                     for dst2 in list(dst2_set):
                         reg_upd = RRTransducer._register_symbol(tr1.reg_update, varsym)
                         new_tran = RRTTransition((s1, s2), \
@@ -249,11 +245,15 @@ class RRTransducer:
                             com_states.add(dst_state)
 
                             state_stack.append(dst_state)
-                            if (dst2 in nfa.Final) and (tr1.dest in self._fin):
+                            if (dst2 in nfa_finals) and (tr1.dest in self._fin):
                                 finals.add(dst_state)
 
         return RRTransducer(self._name, self._in_vars, self._out_vars, \
             self._hist_regs, self._stack_regs, inits, list(finals), trans)
+
+
+    def product_fado(self, nfa):
+        return self.product_abstract(nfa.delta, nfa.Initial, nfa.Final)
 
 
     ############################################################################
@@ -409,6 +409,9 @@ class RRTransducer:
 
     ############################################################################
     def prod_out_str(self, word):
+        """
+        Product output tape with a single word (return a word on the input tape).
+        """
         inits = RRTransducer._cart_list_prod(self._init, [0])
         words = dict()
         com_states = set(copy(inits))
@@ -469,6 +472,10 @@ class RRTransducer:
         for ini in self._init:
             ret.addInitial(ini)
         return ret
+
+
+    #def get_nfa_vata(self):
+
 
 
     ############################################################################
