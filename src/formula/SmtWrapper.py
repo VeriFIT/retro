@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
 import ast
-from PresFormula import *
-from SmtFormula import *
 from itertools import chain
 from collections import defaultdict
-from Symbol import *
-from AuxFunc import *
-from Graph import *
+
+from length.PresFormula import *
+from formula.SmtFormula import *
+from automata.Symbol import *
+from formula.AuxFunc import *
+from formula.Graph import *
 
 conv_map = {EqFormulaType.LEQ: PresFormulaType.LEQ, \
     EqFormulaType.LE: PresFormulaType.LE, EqFormulaType.EQ: PresFormulaType.EQ}

@@ -3,7 +3,7 @@ import collections
 import functools
 import sys
 
-from VTFParser import parsevtf
+from parser.VTFParser import parsevtf
 
 RRTTransition = collections.namedtuple("RRTTransition",
                                        "src guard tape_update reg_update dst")

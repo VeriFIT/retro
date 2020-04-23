@@ -3,19 +3,20 @@
 import sys
 import time
 
-import RetroConfig
-import RRTransducer
-from Symbol import *
-from LabelNFA import *
-from NFAOperation import *
-from RRTParser import parse_rrt, autdict2RRTransducer
-from EquationParser import parse_equations, nfa_from_string
-from SmtParser import *
-from ModelCons import *
-from SmtWrapper import *
 from copy import deepcopy
-
 from FAdo.fa import *
+
+import RetroConfig
+import automata.RRTransducer
+from automata.Symbol import *
+from automata.LabelNFA import *
+from automata.NFAOperation import *
+from parser.RRTParser import parse_rrt, autdict2RRTransducer
+from parser.EquationParser import parse_equations, nfa_from_string
+from parser.SmtParser import *
+from model.ModelCons import *
+from formula.SmtWrapper import *
+
 
 def get_eq_items(smt_formula, incl_len=True, syn_reduce=True):
     wrap = SmtWrapper(smt_formula)
@@ -159,7 +160,6 @@ def rmc_loop_nfa(nfa_eq, rrts):
         if (curr_nfa.Initial & curr_nfa.Final) != set():
             word = []
             word = trans_history[-1][1].prod_out_str(word)
-            # lengths = len_constr_word(word)
             model_con = ModelCons(trans_history[0:-1])
             model = model_con.get_model(word)
             return True, model

@@ -3,15 +3,15 @@
 import sys
 import time
 
-import RRTransducer
-from Symbol import *
-from LabelNFA import *
-from NFAOperation import *
-from RRTParser import parse_rrt, autdict2RRTransducer
-from EquationParser import parse_raw_equations
-from SmtParser import *
-from SmtWrapper import *
-from SmtFormula import *
+import automata.RRTransducer
+from automata.Symbol import *
+from automata.LabelNFA import *
+from automata.NFAOperation import *
+from parser.RRTParser import parse_rrt, autdict2RRTransducer
+from parser.EquationParser import parse_raw_equations
+from parser.SmtParser import *
+from formula.SmtWrapper import *
+from formula.SmtFormula import *
 
 from FAdo.fa import *
 

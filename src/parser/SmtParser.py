@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from SmtFormula import *
+from formula.SmtFormula import *
 
 op_map = {"str.++": EqFormulaType.CONCAT, "str.len": EqFormulaType.LEN, \
     "=": EqFormulaType.EQ, "<": EqFormulaType.LE, "<=": EqFormulaType.LEQ, \

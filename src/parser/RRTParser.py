@@ -4,8 +4,8 @@
 import collections
 import functools
 
-from RRTransducer import *
-from VTFParser import parsevtf
+from automata.RRTransducer import *
+from parser.VTFParser import parsevtf
 
 Transition = collections.namedtuple("Transition",
                                     "src guard tape_update reg_update dst")

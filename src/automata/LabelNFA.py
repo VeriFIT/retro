@@ -1,6 +1,6 @@
 
 #import RRTransducer
-from Symbol import *
+from automata.Symbol import *
 #from NFAOperation import *
 
 from FAdo.fa import *

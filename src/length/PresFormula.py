@@ -1,10 +1,11 @@
 
 import itertools
 import math
-from Symbol import *
+
 from enum import Enum
 from collections import namedtuple
 from FAdo.fa import *
+from automata.Symbol import *
 
 PresNFA = namedtuple("PresNFA", "vars nfa")
 

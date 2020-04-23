@@ -5,7 +5,7 @@ import ast
 import functools
 import operator
 from FAdo.fa import *
-from Symbol import *
+from automata.Symbol import *
 
 
 def split_symbols(line):

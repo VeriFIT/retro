@@ -2,11 +2,10 @@
 
 #from dataclasses import dataclass
 from typing import Callable, List, Tuple, Dict
-from LabelNFA import *
-
 from FAdo.fa import *
 
-from Symbol import *
+from automata.LabelNFA import *
+from automata.Symbol import *
 
 class RRTGuardAct:
     # name: str

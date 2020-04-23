@@ -1,5 +1,5 @@
 
-from RRTransducer import *
+from automata.RRTransducer import *
 from FAdo.fa import *
 
 def onthefly_empty_DFA(fa1, fa2):
