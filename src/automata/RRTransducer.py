@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-#from dataclasses import dataclass
+import automata.pyvata
+
 from typing import Callable, List, Tuple, Dict
 from FAdo.fa import *
 
@@ -255,6 +256,19 @@ class RRTransducer:
         return self.product_abstract(nfa.delta, nfa.Initial, nfa.Final)
 
 
+    def product_vata(self, nfa):
+        tr_dict = {}
+        for tr in nfa.getTransitions():
+            if tr[0] not in tr_dict:
+                tr_dict[tr[0]] = { tr[1]: set([tr[2]]) }
+            else:
+                try:
+                    tr_dict[tr[0]][tr[1]].add(tr[2])
+                except KeyError:
+                    tr_dict[tr[0]][tr[1]] = set([tr[2]])
+        return self.product_abstract(tr_dict, nfa.getInitial(), nfa.getFinal())
+
+
     ############################################################################
     @staticmethod
     def _state_dict(state_dict, cnt, states):
@@ -450,7 +464,7 @@ class RRTransducer:
 
 
     ############################################################################
-    def get_nfa(self):
+    def get_nfa_fado(self):
         """
         Convert flattened RRT to NFA. Assumes numbered states (starting with 0).
         """
@@ -473,8 +487,17 @@ class RRTransducer:
         return ret
 
 
-    #def get_nfa_vata(self):
-
+    def get_nfa_vata(self):
+        ret = automata.pyvata.NFA()
+        fins = set(self._fin)
+        for src, tr_list in self._trans.items():
+            for tr in tr_list:
+                ret.addTransition(tr.src, self._symbol_from_tape(dict(tr.tape_update)), tr.dest)
+        for fin in fins:
+            ret.addFinal(fin)
+        for ini in self._init:
+            ret.addInitial(ini)
+        return ret
 
 
     ############################################################################

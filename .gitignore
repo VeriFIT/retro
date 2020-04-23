@@ -35,3 +35,5 @@ rsconnect/
 
 # Mac stuff
 .DS_Store
+
+lib/*

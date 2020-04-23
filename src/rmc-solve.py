@@ -148,7 +148,7 @@ def rmc_loop_nfa(nfa_eq, rrts):
             rrt.rename_states()
             trans.append(rrt)
 
-            fado_aut = rrt.get_nfa()
+            fado_aut = rrt.get_nfa_fado()
             fado_aut.elimEpsilon().eliminateEpsilonTransitions()
             fado_aut = minimalBrzozowski(fado_aut).trim().toNFA()
             fado_aut.renameStates()
@@ -180,7 +180,7 @@ def rmc_loop_nfa(nfa_eq, rrts):
         all_nfa = disjoint_union(all_nfa.toNFA(), curr_nfa)
         all_nfa = toDFA(all_nfa)
         all_nfa = minimalBrzozowski(all_nfa)
-        all_nfa.renameStates()
+        #all_nfa.renameStates()
         nfa_eq = copy(curr_nfa)
 
 
