@@ -36,7 +36,9 @@ if __name__ == '__main__':
     trs = list(map (parse_rrt, fd_aut))
     rrts_all = list(map (autdict2RRTransducer, trs))
 
-    solve = Solve(RMCLoop.rmc_loop_vata)
+    solve = Solve(RMCLoop.rmc_loop_fado)
+    if RetroConfig.USE_VATA:
+        solve = Solve(RMCLoop.rmc_loop_vata)
 
     model, check, sat = None, None, None
     #try:
