@@ -144,8 +144,8 @@ class Solve:
             return self._rmc_solve_wrap(nfa_eq, rrts, var_dict_rev, raw_eq)
 
 
-    def _solve_smt(self, eqs_lst, rrts):
-        nfa_eq, var_dict, is_len, raw_eq, str_eq, sat = get_eq_items(eqs_lst, True, False)
+    def _solve_smt(self, eqs_lst, rrts_all):
+        nfa_eq, var_dict, is_len, raw_eq, str_eq, sat = Solve._get_eq_items(eqs_lst, True, False)
         if sat == False:
             return False, None, None
         var_dict_rev = dict([(v,k) for k, v in var_dict.items()])
@@ -158,13 +158,13 @@ class Solve:
                 rrts = rrts_all[0:2]
                 ret, model = self._rmc_loop(nfa_eq, rrts)
                 if ret:
-                    ren_model = Solve.rename_model(model, var_dict_rev)
+                    ren_model = Solve._rename_model(model, var_dict_rev)
                     return ret, ren_model, ModelCons.check_model(model, raw_eq)
                 return ret, None, None
         else:
             rrts = rrts_all[2:4]
             ret, model = self._rmc_loop(nfa_eq, rrts)
             if ret:
-                ren_model = Solve.rename_model(model, var_dict_rev)
+                ren_model = Solve._rename_model(model, var_dict_rev)
                 return ret, ren_model, ModelCons.check_model(model, raw_eq)
             return ret, None, None
