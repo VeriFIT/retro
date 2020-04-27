@@ -105,7 +105,10 @@ def parse_single_line(line):
         return None
 
     token, line = get_name_token(line)
-    type = get_op_type(token)
+    try:
+        type = get_op_type(token)
+    except KeyError:
+        raise Exception("Unsupported operator: {0}".format(token))
     formulas = list()
     for bl in get_blocks(line):
         formulas.append(parse_single_line(bl))

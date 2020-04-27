@@ -25,7 +25,11 @@ if __name__ == '__main__':
 
     start_time = time.time()
 
-    smt_for = parse_smt_file(fd_eq)
+    try:
+        smt_for = parse_smt_file(fd_eq)
+    except Exception as e:
+        sys.stderr.write("{0}\n".format(str(e)))
+        sys.exit(1)
     smt_for_copy = deepcopy(smt_for)
     smt_for_filter = copy(list(filter(lambda x: x.is_str_equation(), smt_for)))
 
