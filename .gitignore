@@ -37,3 +37,7 @@ rsconnect/
 .DS_Store
 
 lib/*
+
+*.zip
+results
+figures/*.eps

@@ -1,0 +1,48 @@
+Digraph G {
+
+0 -> 1 [label="(var in1) & (not (= in1 in2)) & (not (len in1))\nout1 <- eps, out2 <- eps\nx1 <- in1, y2a <- in2"];
+0 -> 0 [label="(= in1 in2) & (not (blank in2)) & (not (len in1))\nout1 <- eps, out2 <- eps\n"];
+0 -> 2 [label="(blank in1) & (blank in2)\nout1 <- eps, out2 <- eps\n"];
+2 -> 2 [label="(blank in1) & (blank in2)\nout1 <- eps, out2 <- eps\n"];
+2 -> 2 [label="(delim in1) & (delim in2)\nout1 <- eps, out2 <- eps\n"];
+2 -> 2 [label="(= in1 in2) & (not (len in1))\nout1 <- eps, out2 <- eps\n"];
+2 -> 3 [label="(len in1) & (len in2)\nout1 <- eps, out2 <- eps\n"];
+3 -> 3 [label="\nout1 <- eps, out2 <- eps\n"];
+2 -> 4 [label="(var in2) & (not (= in1 in2)) & (not (len in1))\nout1 <- eps, out2 <- eps\nx1 <- in2, y1a <- in1"];
+2 -> 1 [label="(var in1) & (not (= in1 in2)) & (not (len in1))\nout1 <- eps, out2 <- eps\nx1 <- in1, y2a <- in2"];
+1 -> 1 [label="(not (= in1 x1)) & (not (= in2 x1)) & (not (blank in2)) & (not (delim in2)) & (not (len in1))\nout1 <- in1, out2 <- y2a\ny2a <- in2"];
+1 -> 5 [label="(= in2 x1)\nout1 <- in1, out2 <- y2a\ny2a <- null"];
+1 -> 6 [label="(= in1 x1)\nout1 <- eps, out2 <- eps\ny2b <- in2"];
+1 -> 5 [label="(blank in2)\nout1 <- in1, out2 <- y2a\ny2a <- null"];
+6 -> 6 [label="(not (blank in2)) & (not (delim in2)) & (not (len in1))\nout1 <- in1, out2 <- y2a\ny2a <- y2b, y2b <- in2"];
+6 -> 1 [label="(blank in2)\nout1 <- in1, out2 <- y2a\ny2a <- y2b, y2b <- null"];
+5 -> 5 [label="(not (= x1 in1)) & (not (= x1 in2)) & (not (delim in1)) & (not (len in1))\nout1 <- in1, out2 <- in2\n"];
+5 -> 4 [label="(= in2 x1)\nout1 <- eps, out2 <- eps\ny1a <- in1"];
+5 -> 7 [label="(len in1) & (len in2)\nout1 <- in1, out2 <- in2\ny1a <- in1"];
+8 -> 7 [label="(len in1) & (len in2)\nout1 <- in1, out2 <- in2\ny1a <- in1"];
+7 -> 7 [label="(proj in x1 0)\nout <- in\n"];
+5 -> 1 [label="(= in1 x1)\nout1 <- eps, out2 <- eps\ny2a <- in2"];
+0 -> 4 [label="(var in2) & (not (= in1 in2)) & (not (len in1))\nout1 <- eps, out2 <- eps\nx1 <- in2, y1a <- in1"];
+4 -> 4 [label="(not (= in1 x1)) & (not (= in2 x1)) & (not (blank in1)) & (not (delim in1)) & (not (len in1))\nout1 <- y1a, out2 <- in2\ny1a <- in1"];
+4 -> 9 [label="(= in2 x1)\nout1 <- eps, out2 <- eps\ny1b <- in1"];
+9 -> 9 [label="(not (blank in1)) & (not (delim in2)) & (not (len in1))\nout1 <- y1a, out2 <- in2\ny1a <- y1b, y1b <- in1"];
+9 -> 4 [label="(blank in1)\nout1 <- y1a, out2 <- in2\ny1a <- y1b, y1b <- null"];
+4 -> 5 [label="(= in1 x1)\nout1 <- y1a, out2 <- in2\ny1a <- null"];
+4 -> 5 [label="(blank in1)\nout1 <- y1a, out2 <- in2\ny1a <- null"];
+5 -> 8 [label="(delim in1) & (delim in2)\nout1 <- in1, out2 <- in2\n"];
+8 -> 8 [label="(not (= x1 in1)) & (not (= x1 in2)) & (not (len in1))\nout1 <- in1, out2 <- in2\n"];
+8 -> 4 [label="(= x1 in2)\nout1 <- eps, out2 <- eps\ny1a <- in1"];
+8 -> 1 [label="(= x1 in1)\nout1 <- eps, out2 <- eps\ny2a <- in2"];
+init0 [label="",shape=plaintext];
+init0 -> 0;
+0 [label="init"];
+1 [label="y2a_act"];
+2 [label="trim"];
+3 [label="len_trim",peripheries=2];
+4 [label="y1a_act"];
+5 [label="no_act"];
+6 [label="y2a_y2b_act"];
+7 [label="len_constr",peripheries=2];
+8 [label="new_eq"];
+9 [label="y1a_y1b_act"];
+}
