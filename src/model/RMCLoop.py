@@ -23,8 +23,8 @@ class RMCLoop:
             curr_nfa = NFA()
             trans = list()
             for rrt in flatten:
-                # if rrt.bad_state():
-                #     raise Exception("Not quadratic")
+                if rrt.bad_state():
+                    raise Exception("Not terminating")
 
                 rrt.rename_states()
                 trans.append(rrt)
@@ -45,23 +45,13 @@ class RMCLoop:
                 model = model_con.get_model(word)
                 return True, model
 
-            # all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
-            # comp = all_nfa.__invert__()
-            # comp.renameStates()
-            # if onthefly_empty_NFA(comp.toNFA(), curr_nfa):
-            #     return False, None
-            # all_nfa.Sigma = all_nfa.Sigma.union(curr_nfa.Sigma)
-            # comp = all_nfa.__invert__()
-            # comp.renameStates()
             all_nfa.renameStates()
             if onthefly_empty_no_invert_DFA(all_nfa, curr_nfa):
                 return False, None
 
-            #all_nfa.renameStates()
             all_nfa = disjoint_union(all_nfa.toNFA(), curr_nfa)
             all_nfa = toDFA(all_nfa)
             all_nfa = minimalBrzozowski(all_nfa)
-            #all_nfa.renameStates()
             nfa_eq = copy(curr_nfa)
 
 
@@ -71,7 +61,6 @@ class RMCLoop:
 
         all_nfa = copy(nfa_eq)
 
-        #all_nfa = all_nfa.toDFA()
         trans_history = list()
 
         while True:
@@ -87,10 +76,8 @@ class RMCLoop:
                 trans.append(rrt)
 
                 vata_aut = rrt.get_nfa_vata()
-
                 vata_aut = vata_aut.removeEpsilon(Epsilon)
                 vata_aut = vata_aut.minimize()
-                #vata_aut.renameStates()
 
                 curr_nfa = automata.pyvata.NFA.union(curr_nfa, vata_aut)
 
@@ -107,7 +94,6 @@ class RMCLoop:
                 return False, None
 
             all_nfa = automata.pyvata.NFA.union(all_nfa, curr_nfa)
-            #all_nfa = toDFA(all_nfa)
             all_nfa = all_nfa.minimize()
             nfa_eq = copy(curr_nfa)
 

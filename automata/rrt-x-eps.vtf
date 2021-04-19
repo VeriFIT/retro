@@ -158,3 +158,26 @@ new_eq ("(= x1 in1)") \
      ("out1 <- eps" "out2 <- eps") \
      ("y2a <- in2") \
      y2a_act
+
+y2a_y2b_act ("(= x1 in1)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     bad
+
+
+y2a_y2b_act ("(= x1 in2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     bad
+
+
+y1a_y1b_act ("(= x1 in1)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     bad
+
+
+y1a_y1b_act ("(= x1 in2)") \
+     ("out1 <- in1" "out2 <- in2") \
+     () \
+     bad

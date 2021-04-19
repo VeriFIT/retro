@@ -45,19 +45,19 @@ if __name__ == '__main__':
         solve = Solve(RMCLoop.rmc_loop_vata)
 
     model, check, sat = None, None, None
-    #try:
-    if RetroConfig.MULTI_EQ_OPTIMIZATION:
-        sat, model, check = solve.iterative_solution(smt_for_filter, rrts_all)
-    if sat is None:
-        sat, model, check = solve.solution(rrts_all, smt_for_copy)
-    if sat == True:
-        print(model)
-        print("Model check: {0}".format(check))
-        print("sat")
-    else:
-        print("unsat")
-    # except Exception:
-    #     print("Not quadratic: {0}".format(sys.argv[1]))
+    try:
+        if RetroConfig.MULTI_EQ_OPTIMIZATION:
+            sat, model, check = solve.iterative_solution(smt_for_filter, rrts_all)
+        if sat is None:
+            sat, model, check = solve.solution(rrts_all, smt_for_copy)
+        if sat == True:
+            print(model)
+            print("Model check: {0}".format(check))
+            print("sat")
+        else:
+            print("unsat")
+    except Exception:
+        print("Possible non-terminating instance: {0}".format(sys.argv[1]))
 
     print("Time: {0}".format(round(time.time() - start_time, 2)))
 
